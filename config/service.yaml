@@ -81,6 +81,12 @@ discovery:
   strategy: hiring_first     # live: fresh logistics job posts in route cities first | index
   job_search_limit: 100      # job posts scanned for discovery (0.03 credits each)
   live_max_candidates: 10    # companies taken into a live job: ~Rs 30-150 each, 5 req/min key
+  hiring_search_max: 50      # hiring companies checked against the index in one search
+  name_lookup: true          # job posts without a company id: resolve the employer name
+  name_lookup_max: 25        # names per job (company identify, 0.2 credits per match)
+  skip_employer_words: [hr, talent, consulting, consultings, consultancy, consultants,
+    recruitment, recruiters, staffing, placement, placements, manpower, hire, hiring, jobs,
+    careers, resource management, college, university, institute]
   hiring_first:
     # Multinationals hiring for Indian plants (Dow, Eaton, Vertiv...) are headquartered
     # abroad and count global staff, so the HQ-country filter and headcount cap would drop

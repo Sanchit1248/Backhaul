@@ -30,6 +30,8 @@ class Fake:
         self.calls.append((operation, body))
         if operation == "job_search":
             data = {"job_listings": self.posts}
+        elif operation == "company_identify":
+            data = self.identify(body) if hasattr(self, "identify") else []
         else:
             data = {"companies": self.companies}
         return {"data": data, "url": f"https://api.example/{operation}",
@@ -61,8 +63,7 @@ def test_hiring_first_ranks_by_posts_and_filters_by_company_index():
     conds = jbody["filters"]["conditions"]
     assert {"field": "metadata.date_added", "type": "=>", "value": "2026-10-23"} in conds
     assert conds[-1]["value"] == ["Pune", "Mumbai", "Chakan", "Bhiwandi"]
-    op, cbody = fake.calls[1]
-    assert op == "company_search"
+    op, cbody = next(c for c in fake.calls if c[0] == "company_search")
     ccond = cbody["filters"]["conditions"]
     assert {"field": "crustdata_company_id", "type": "in", "value": [11, 22, 44]} in ccond
     assert not any(c.get("field") == "locations.city" for c in ccond)
@@ -80,7 +81,8 @@ def test_hiring_first_can_drop_hq_country_and_headcount_cap():
                                 "hiring_first": {"hq_country_filter": False, "headcount_max": None}}}
     fake = Fake([_post("Warehouse Manager", 11, 20)], [_company(11, "Alpha")])
     lc.discover_hiring_first(fake, JOB, RECORDS, cfg=cfg, notes=[])
-    fields = [(c.get("field"), c.get("type")) for c in fake.calls[1][1]["filters"]["conditions"]]
+    cbody = next(c for c in fake.calls if c[0] == "company_search")[1]
+    fields = [(c.get("field"), c.get("type")) for c in cbody["filters"]["conditions"]]
     assert ("locations.country", "=") not in fields
     assert ("headcount.total", "=<") not in fields
     assert ("headcount.total", "=>") in fields
@@ -211,3 +213,68 @@ def test_buyer_search_limited_to_lane_country_with_sourced_location(monkeypatch)
     assert {"field": "basic_profile.location.country", "type": "in", "value": ["India"]} in conds
     assert [b.name for b in out] == ["Pune Head"]
     assert any("location.country = 'India'" in s.excerpt for f in out[0].facts for s in f.sources)
+
+
+# ---- employer-name lookup for posts without a company id
+def _noid(title, name, day=20, raw="Pune, Maharashtra", url=None):
+    return {"job_details": {"title": title, "url": url or f"https://j/{name}/{day}"},
+            "company": {"basic_info": {"name": name, "crustdata_company_id": None}},
+            "location": {"raw": raw}, "metadata": {"date_added": f"2026-11-{day:02d}T10:00:00"}}
+
+
+def _identify_answers(answers):
+    def identify(body):
+        return [{"matched_on": n, "match_type": "name",
+                 "matches": [{"confidence_score": sc, "company_data": {
+                     "crustdata_company_id": cid, "basic_info": {"name": nm, "primary_domain": f"{cid}.com"}}}
+                     for cid, nm, sc in answers.get(n, [])]} for n in body["names"]]
+    return identify
+
+
+def test_name_lookup_resolves_confident_names_and_skips_agencies():
+    posts = [_noid("Logistics Manager", "LANXESS", 20), _noid("Warehouse Lead", "LANXESS", 18),
+             _noid("Supply Chain Exec", "Lookalike Foods", 19),
+             _noid("Warehouse Executive", "SBS HR", 19)]
+    fake = Fake(posts, [_company(77, "LANXESS")])
+    fake.identify = _identify_answers({
+        "LANXESS": [(77, "LANXESS", 0.95)],
+        "Lookalike Foods": [(5, "Lookalike Foods Ltd", 0.80), (6, "Lookalike Food Co", 0.78)]})
+    names: dict = {}
+    notes: list[str] = []
+    refs = lc.discover_hiring_first(fake, JOB, RECORDS, cfg={**CFG, "identity": {
+        "min_score": 0.6, "lookalike_gap": 0.1}}, notes=notes, names_out=names)
+    asked = next(b for op, b in fake.calls if op == "company_identify")["names"]
+    assert "SBS HR" not in asked                                  # agency skipped, no credits
+    assert set(names) == {"lanxess"}                              # lookalike left out
+    assert [r.name for r in refs] == ["LANXESS"]
+    cbody = next(b for op, b in fake.calls if op == "company_search")
+    assert {"field": "crustdata_company_id", "type": "in", "value": [77]} in \
+        cbody["filters"]["conditions"]
+    assert any("1 of 2 names resolved" in n for n in notes)
+
+
+def test_resolved_name_post_becomes_trigger_citing_identify():
+    from service.models import CompanyRef
+    fake = Fake([], [])
+    fake.identify = _identify_answers({"LANXESS": [(77, "LANXESS", 0.95)]})
+    names = lc.resolve_post_employers(fake, ["LANXESS"], {"identity": {}})
+    env = {"data": {"job_listings": [_noid("Logistics Manager", "LANXESS", 20)]},
+           "url": "https://api.example/job/search", "retrieved_at": "2026-11-22T00:00:00Z"}
+    lanxess = CompanyRef(name="LANXESS", crustdata_id="77")
+    assert lsig.map_job_listings(env, lanxess) == []              # no id: not matched alone
+    (t,) = lsig.map_job_listings(env, lanxess, names)
+    excerpts = " | ".join(s.excerpt for s in t.fact.sources)
+    assert "matched_on = 'LANXESS'" in excerpts and "confidence_score = 0.95" in excerpts
+    other = CompanyRef(name="LANXESS India", crustdata_id="78")
+    assert lsig.map_job_listings(env, other, names) == []         # resolved to 77, not 78
+
+
+def test_single_post_companies_are_not_cut_before_index_filters():
+    posts = [_post("Warehouse Manager", 100 + i, 20) for i in range(36)]
+    fake = Fake(posts, [_company(135, "Late Co")])
+    lc.discover_hiring_first(fake, JOB, RECORDS, cfg={**CFG, "limits": {"max_candidates": 10}},
+                             notes=[])
+    cbody = next(b for op, b in fake.calls if op == "company_search")
+    ids = next(c["value"] for c in cbody["filters"]["conditions"]
+               if c.get("field") == "crustdata_company_id")
+    assert len(ids) == 36 and 135 in ids

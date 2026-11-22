@@ -45,10 +45,12 @@ class LiveSources:
         found: list[CompanyRef] = []
         if cfg.get("discovery", {}).get("strategy", "hiring_first") == "hiring_first":
             posts: list[dict] = []
+            names: dict = {}
             found = live_companies.discover_hiring_first(self.client, job, client, cfg=cfg,
-                                                         notes=notes, posts_out=posts)
+                                                         notes=notes, posts_out=posts,
+                                                         names_out=names)
             if posts:
-                self._save_posts(posts[0])
+                self._save_posts(posts[0], names)
             if not found:
                 notes.append("discovery: no hiring-first candidates; falling back to the "
                              "company index (largest companies headquartered on the route)")
@@ -64,16 +66,20 @@ class LiveSources:
     # Discovery's job posts, kept in the ledger (survives a restart, costs nothing again).
     POSTS_STEP = "02_discover_posts"
 
-    def _save_posts(self, resp: dict) -> None:
-        self._posts = resp
-        self.ledger.step(self.budget.run_id, self.POSTS_STEP, lambda: resp)
+    def _save_posts(self, resp: dict, names: dict | None = None) -> None:
+        saved = {"posts": resp, "names": names or {}}
+        self._posts, self._names = resp, names or {}
+        self.ledger.step(self.budget.run_id, self.POSTS_STEP, lambda: saved)
 
     def _discovery_posts(self) -> dict | None:
         if getattr(self, "_posts", None) is None:
             row = self.ledger.db.execute(
                 "SELECT output FROM steps WHERE run_id=? AND step=?",
                 (self.budget.run_id, self.POSTS_STEP)).fetchone()
-            self._posts = json.loads(row[0]) if row else {}
+            saved = json.loads(row[0]) if row else {}
+            if "posts" not in saved:          # older checkpoints stored the response itself
+                saved = {"posts": saved, "names": {}}
+            self._posts, self._names = saved["posts"], saved.get("names") or {}
         return self._posts or None
 
     def triggers(self, company: CompanyRef, since: date) -> list[Trigger]:
@@ -84,7 +90,8 @@ class LiveSources:
         posts = self._discovery_posts()
         if posts:
             try:
-                local = live_signals.map_job_listings(posts, company)
+                local = live_signals.map_job_listings(posts, company,
+                                                      getattr(self, "_names", None) or None)
             except SourceUnavailable:
                 local = []
         try:

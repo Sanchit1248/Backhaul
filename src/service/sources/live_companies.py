@@ -240,10 +240,93 @@ def hiring_job_body(job: JobRequest, records: ClientRecords, cfg: dict, since: d
             "limit": int(disc.get("job_search_limit", 100))}
 
 
+# Employer names on job posts that are agencies, not shippers (config
+# discovery.skip_employer_words overrides). Matched as whole words.
+SKIP_EMPLOYER_WORDS = ["hr", "talent", "consulting", "consultings", "consultancy",
+                       "consultants", "recruitment", "recruiters", "staffing", "placement",
+                       "placements", "manpower", "hire", "hiring", "jobs", "careers",
+                       "resource management", "college", "university", "institute"]
+
+
+def _skip_employer(name: str, cfg: dict) -> str | None:
+    from .live_signals import is_relevant_logistics_job_title
+
+    words = (cfg.get("discovery") or {}).get("skip_employer_words")
+    words = SKIP_EMPLOYER_WORDS if words is None else words
+    text = f" {_fold(name)} "
+    for w in words:
+        if f" {_fold(w)} " in text:
+            return f"agency/other ({w})"
+    if is_relevant_logistics_job_title(name):
+        return "job title or logistics firm, not a shipper"
+    return None
+
+
+def _core(name: str) -> str:
+    from .live_signals import _normalize_company_name
+
+    return _normalize_company_name(name)
+
+
+def resolve_post_employers(client, names: list[str], cfg: dict,
+                           notes: list[str] | None = None) -> dict[str, dict]:
+    """Company ids for employer names on job posts that carry no Crustdata company id,
+    via batch company identify (25 names per call; 0.2 credits per matched name).
+
+    A name resolves only when, like step 3's rules: the best match clears
+    identity.min_score, is not within identity.lookalike_gap of the runner-up, and its
+    name agrees with the post's employer name. Returns {normalized employer name:
+    {"crustdata_id", "name", "domain", "score", "source"}} where `source` is the identify
+    citation (a models.Source as JSON) linking the name to the id."""
+    notes = notes if notes is not None else []
+    ident = cfg.get("identity") or {}
+    min_score = float(ident.get("min_score", 0.6))
+    gap = float(ident.get("lookalike_gap", 0.1))
+    out: dict[str, dict] = {}
+    unresolved = 0
+    for start in range(0, len(names), 25):
+        batch = names[start:start + 25]
+        resp = client.call("company_identify", body={"names": batch})
+        entries = _data(resp, list, "company_identify")
+        for i, e in enumerate(entries):
+            if not isinstance(e, dict) or not e.get("matched_on"):
+                continue
+            asked = str(e["matched_on"])
+            ranked = sorted(((float(m.get("confidence_score") or 0), j, m)
+                             for j, m in enumerate(e.get("matches") or [])),
+                            key=lambda t: -t[0])
+            if not ranked or ranked[0][0] < min_score or \
+                    (len(ranked) > 1 and ranked[0][0] - ranked[1][0] < gap):
+                unresolved += 1
+                continue
+            score, j, m = ranked[0]
+            cd = m.get("company_data") or {}
+            info = cd.get("basic_info") or {}
+            cid = _id(cd.get("crustdata_company_id") or info.get("crustdata_company_id"))
+            a, b = _core(asked), _core(info.get("name") or "")
+            if not cid or not a or not b or not (a == b or a in b or b in a):
+                unresolved += 1
+                continue
+            path = f"[{i}].matches[{j}].company_data.crustdata_company_id"
+            src = cite(resp, path, int(cid) if cid.isdigit() else cid)
+            src = src.model_copy(update={"excerpt": (
+                f"[{i}].matched_on = {asked!r}; {src.excerpt}; "
+                f"[{i}].matches[{j}].company_data.basic_info.name = {info.get('name')!r}; "
+                f"[{i}].matches[{j}].confidence_score = {score}")})
+            out[_core(asked)] = {"crustdata_id": cid, "name": info.get("name"),
+                                 "domain": _domain(info.get("primary_domain")) or None,
+                                 "score": score, "source": src.model_dump(mode="json")}
+    notes.append(f"discovery: employer-name lookup for posts without a company id: "
+                 f"{len(out)} of {len(names)} names resolved, {unresolved} ambiguous or "
+                 "unmatched (left out)")
+    return out
+
+
 def discover_hiring_first(client, job: JobRequest, records: ClientRecords, *,
                           cfg: dict | None = None,
                           notes: list[str] | None = None,
-                          posts_out: list[dict] | None = None) -> list[CompanyRef]:
+                          posts_out: list[dict] | None = None,
+                          names_out: dict | None = None) -> list[CompanyRef]:
     """Companies that posted a logistics/warehouse/supply-chain job in a route city (or a
     satellite town) inside the trigger window, kept only if the company index places
     them in India, in the target industries and headcount band.
@@ -272,6 +355,7 @@ def discover_hiring_first(client, job: JobRequest, records: ClientRecords, *,
         posts_out.append(resp)
 
     stats: dict[str, list] = {}   # company id -> [posts, latest post date]
+    by_name: dict[str, list] = {}  # employer name -> [posts, latest date] (no company id)
     no_id = irrelevant = 0
     for row in rows:
         if not isinstance(row, dict):
@@ -280,11 +364,17 @@ def discover_hiring_first(client, job: JobRequest, records: ClientRecords, *,
         if not is_relevant_logistics_job_title(title):
             irrelevant += 1
             continue
-        cid = _id(((row.get("company") or {}).get("basic_info") or {}).get("crustdata_company_id"))
+        basic = (row.get("company") or {}).get("basic_info") or {}
+        cid = _id(basic.get("crustdata_company_id"))
+        d = parse_date((row.get("metadata") or {}).get("date_added"))
         if not cid:
             no_id += 1
+            if basic.get("name"):
+                st = by_name.setdefault(basic["name"].strip(), [0, None])
+                st[0] += 1
+                if d and (st[1] is None or d > st[1]):
+                    st[1] = d
             continue
-        d = parse_date((row.get("metadata") or {}).get("date_added"))
         st = stats.setdefault(cid, [0, None])
         st[0] += 1
         if d and (st[1] is None or d > st[1]):
@@ -293,12 +383,34 @@ def discover_hiring_first(client, job: JobRequest, records: ClientRecords, *,
     notes.append(f"discovery: {len(rows)} logistics job posts since {since} in "
                  f"{', '.join(cities) or 'any city'}; {len(stats)} companies with an id, "
                  f"{no_id} posts without a company id, {irrelevant} non-freight titles skipped")
+    disc = cfg.get("discovery") or {}
+    if by_name and disc.get("name_lookup", True):
+        skipped = {n: why for n in by_name if (why := _skip_employer(n, cfg))}
+        names = sorted((n for n in by_name if n not in skipped),
+                       key=lambda n: (-by_name[n][0], n))[: int(disc.get("name_lookup_max", 25))]
+        if skipped:
+            notes.append(f"discovery: {len(skipped)} employer names skipped before lookup "
+                         "(agencies, colleges, job titles)")
+        resolved = resolve_post_employers(client, names, cfg, notes) if names else {}
+        if names_out is not None:
+            names_out.update(resolved)
+        for n in names:
+            r = resolved.get(_core(n))
+            if not r:
+                continue
+            st = stats.setdefault(r["crustdata_id"], [0, None])
+            st[0] += by_name[n][0]
+            if by_name[n][1] and (st[1] is None or by_name[n][1] > st[1]):
+                st[1] = by_name[n][1]
     if not stats:
         return []
 
     limit = live_cap(cfg)
     ranked = sorted(stats, key=lambda k: (stats[k][0], stats[k][1] or since), reverse=True)
-    ids = ranked[: limit * 3]
+    # every hiring company up to discovery.hiring_search_max goes into ONE company search
+    # (billed per row returned), so a company with a single post is not cut before the
+    # index filters even run
+    ids = ranked[: max(limit, int(disc.get("hiring_search_max", 50)))]
     body, extra = search_body(job, records, cfg)
     notes.extend(e for e in extra if "headquarters city" not in e)
     hf = (cfg.get("discovery") or {}).get("hiring_first") or {}

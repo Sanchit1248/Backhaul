@@ -567,7 +567,8 @@ def _extract_job_posting_date(row: dict[str, Any]) -> tuple[date | None, str | N
     return None, None, None
 
 
-def map_job_listings(resp: dict[str, Any], company: CompanyRef) -> list[Trigger]:
+def map_job_listings(resp: dict[str, Any], company: CompanyRef,
+                     resolved_names: dict[str, dict] | None = None) -> list[Trigger]:
     """Map a Crustdata `job_search` response envelope into hiring `Trigger`s.
 
     Preserves old and undated listings returned by the source so Person D's
@@ -593,6 +594,17 @@ def map_job_listings(resp: dict[str, Any], company: CompanyRef) -> list[Trigger]
             continue
 
         matched, _reason = corroborates_job_company(row, company)
+        identity_src: Source | None = None
+        if not matched and resolved_names:
+            # Post without a company id whose employer NAME was resolved to this company
+            # by company identify during discovery: the identify citation goes with it.
+            basic = ((row.get("company") or {}).get("basic_info") or {}) \
+                if isinstance(row.get("company"), dict) else {}
+            hit = resolved_names.get(_normalize_company_name(basic.get("name")))
+            if basic.get("crustdata_company_id") is None and hit and company.crustdata_id \
+                    and str(hit.get("crustdata_id")) == str(company.crustdata_id):
+                matched = True
+                identity_src = Source.model_validate(hit["source"])
         if not matched:
             continue
 
@@ -627,6 +639,8 @@ def map_job_listings(resp: dict[str, Any], company: CompanyRef) -> list[Trigger]
                 )
             )
 
+        if identity_src is not None:
+            sources.append(identity_src)
         if date_path is not None:
             sources.append(cite(envelope, date_path, raw_date, record_date=_date_str(event_date)))
         else:
