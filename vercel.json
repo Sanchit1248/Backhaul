@@ -5,6 +5,5 @@
       "maxDuration": 60,
       "includeFiles": "{src/**,config/**,tests/fixtures/**}"
     }
-  },
-  "rewrites": [{ "source": "/(.*)", "destination": "/api/index" }]
+  }
 }

@@ -12,3 +12,6 @@ evals/
 scripts/
 tests/*
 !tests/fixtures/
+.env.local
+.env*.local
+.vercel/
