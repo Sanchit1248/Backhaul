@@ -1,0 +1,25 @@
+{
+  "_note": "20 chat test questions -> expected task + params (LaneLead plan, person C). params: only the keys listed must match.",
+  "cases": [
+    {"q": "Find 5 targets on Pune to Mumbai", "task": "find_targets", "params": {"routes": [["pune", "mumbai"]], "count": 5}},
+    {"q": "Book 3 meetings for the Nashik to Mumbai route", "task": "find_targets", "params": {"routes": [["nashik", "mumbai"]], "count": 3}},
+    {"q": "Which companies are expanding near Pune-Mumbai in the last 14 days?", "task": "find_targets", "params": {"routes": [["pune", "mumbai"]], "window_days": 14}},
+    {"q": "find 10 prospects from Chennai to Bengaluru", "task": "find_targets", "params": {"routes": [["chennai", "bengaluru"]], "count": 10}},
+    {"q": "Who is hiring logistics managers on our lanes?", "task": "find_targets", "params": {}},
+    {"q": "Find targets", "task": "find_targets", "params": {}},
+    {"q": "Get me 8 leads on Delhi → Jaipur within 30 days", "task": "find_targets", "params": {"routes": [["delhi", "jaipur"]], "count": 8, "window_days": 30}},
+    {"q": "What clients might be leaving?", "task": "check_churn", "params": {"clients": []}},
+    {"q": "Why is Sahyog Polymers at risk?", "task": "check_churn", "params": {"clients": ["Sahyog Polymers"]}},
+    {"q": "Is Mahalaxmi Textiles churning?", "task": "check_churn", "params": {"clients": ["Mahalaxmi Textiles"]}},
+    {"q": "show churn risk", "task": "check_churn", "params": {"clients": []}},
+    {"q": "Any client at risk of leaving us?", "task": "check_churn", "params": {"clients": []}},
+    {"q": "How much free capacity do we have on Pune to Mumbai?", "task": "route_capacity", "params": {"origin": "pune", "destination": "mumbai"}},
+    {"q": "spare trucks on Nashik to Mumbai this week", "task": "route_capacity", "params": {"origin": "nashik", "destination": "mumbai"}},
+    {"q": "Show capacity on every lane", "task": "route_capacity", "params": {}},
+    {"q": "Draft an email to the second one", "task": "show_draft", "params": {"index": 2}},
+    {"q": "write the mail to the first one", "task": "show_draft", "params": {"index": 1}},
+    {"q": "show me the draft for the last one", "task": "show_draft", "params": {"index": -1}},
+    {"q": "email the 3rd company", "task": "show_draft", "params": {"index": 3}},
+    {"q": "What is the weather in Pune?", "task": null, "params": {}}
+  ]
+}

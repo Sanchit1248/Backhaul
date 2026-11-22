@@ -22,6 +22,7 @@ from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from ..config import env, usd_to_inr
+from ..core import outbox
 from ..ledger import Ledger
 
 COOKIE = "svc_approver"
@@ -137,7 +138,7 @@ pipeline run (<code>svc run</code> with the same request).</p>
         name = require(request, csrf)
         with lock:
             a = pending_action(key)
-            led.decide(key, True, by=name)
+            outbox.approve(led, key, name)
         return back(f"Approved: {a['payload'].get('company', key)} (by {name}). "
                     "It will be sent on the next pipeline run.")
 
@@ -146,7 +147,7 @@ pipeline run (<code>svc run</code> with the same request).</p>
         name = require(request, csrf)
         with lock:
             a = pending_action(key)
-            led.decide(key, False, by=name)
+            outbox.reject(led, key, name)
         return back(f"Rejected: {a['payload'].get('company', key)} (by {name}).")
 
     @app.get("/actions/{key}/edit", response_class=HTMLResponse)
@@ -191,6 +192,9 @@ pipeline run (<code>svc run</code> with the same request).</p>
         return back(f"Saved edit to {payload.get('company', key)} (by {name}); "
                     "still pending approval.")
 
+    from .lanelead import register  # chat, map, memory, request API
+    register(app, led=led, lock=lock, approver=approver, csrf_for=csrf_for, require=require,
+             api_token=env("LANELEAD_API_TOKEN") or "")
     return app
 
 
@@ -323,11 +327,22 @@ button.link{border:0;background:none;color:var(--accent);padding:0}
 input,textarea{width:100%;font:inherit;padding:6px;margin:4px 0 12px;background:var(--bg);
 color:var(--fg);border:1px solid var(--line);border-radius:6px}
 textarea{font:13px/1.5 ui-monospace,Menlo,monospace}.bar{display:flex;gap:8px}
+.nav{display:flex;gap:16px;font-size:14px;margin-bottom:4px}
+.turn{border-left:3px solid var(--line);padding-left:12px;margin:14px 0}
+.q{font-weight:600}.ans p{margin:4px 0}.ans h4{margin:12px 0 4px}
+details.ev{font-size:13px;margin:2px 0 6px 12px}details.ev summary{cursor:pointer;color:var(--muted)}
+table.grid{border-collapse:collapse;width:100%;font-size:13px}
+table.grid td,table.grid th{border-bottom:1px solid var(--line);padding:4px 6px;text-align:left}
+svg.map{width:100%;height:auto;background:var(--card);border:1px solid var(--line);border-radius:8px}
+.legend span{display:inline-block;margin-right:14px;font-size:13px}
+.sw{display:inline-block;width:18px;height:4px;vertical-align:middle;margin-right:4px}
 """
 
 
-def page(title: str, body: str) -> str:
+def page(title: str, body: str, head: str = "") -> str:
     return f"""<!doctype html><html lang=en><head><meta charset=utf-8>
-<meta name=viewport content="width=device-width,initial-scale=1">
+<meta name=viewport content="width=device-width,initial-scale=1">{head}
 <title>{escape(title)}</title><style>{CSS}</style></head>
-<body><main><h1>{escape(title)}</h1>{body}</main></body></html>"""
+<body><main><nav class=nav><a href="/">Approvals</a> <a href="/chat">Chat</a>
+<a href="/map">Map</a> <a href="/memory">Memory</a></nav>
+<h1>{escape(title)}</h1>{body}</main></body></html>"""
