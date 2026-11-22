@@ -2,7 +2,7 @@
 
 **Fill every empty mile.** An outbound sales-development service for a 3PL.
 
-**Demo Video:** https://drive.google.com/drive/folders/1apNg_tCQgF5KQPw5oo1h5IR8Do6VglNl?usp=drive_link
+**Demo Video:** https://drive.google.com/drive/folders/1apNg_tCQgF5KQPw5oo1h5IR8Do6VglNl?usp=sharing
 
 **ContextCon 05 "Services, Replaced" · Revenue track**
 
