@@ -37,15 +37,35 @@ Our key's limits (from `GET /account/endpoints`, 22 Nov 2026): 5 requests/min on
 
 ## Quickstart
 ```powershell
-.\scripts\setup.ps1                 # venv + deps + .env + tests
+.\scripts\setup.ps1                 # venv + deps (pip install -e ".[dev]") + .env + tests
 python evals\run_evals.py           # hard-case evals on fixtures (must show no WRONG)
-python -m service.cli run evals\cases\fixture_hard_cases.json
-python -m service.cli pending       # see drafts waiting for approval
+python -m service.cli run evals\cases\fixture_hard_cases.json --mode fixtures
+python -m service.cli pending       # drafts waiting for approval (--json for key/company)
 python -m service.cli approve <key> --by "Your Name"
-python -m service.cli run evals\cases\fixture_hard_cases.json   # sends approved ones, once
-python -m service.cli cost <job_id>
+python -m service.cli run evals\cases\fixture_hard_cases.json --mode fixtures   # sends approved ones, once
+python -m service.cli outbox <job_id>   # each outbox row + whether its .eml/.ics exist
+python -m service.cli cost <job_id>     # Rs per op, Crustdata credits estimated vs reported
+python -m service.cli cost <job_id> --calls   # every paid call with its request id
+python -m service.web                   # approval page on http://127.0.0.1:8000 (APPROVER_PASSWORD in .env)
 ```
-Set `sources.mode: live` in `config/service.yaml` for real runs (screening and finals).
+Real runs (screening and finals) use `--mode live` (Crustdata key in `.env`, credit price in
+`costs.crustdata_inr_per_credit`). `config/service.yaml` keeps `sources.mode: fixtures` as the
+default so the tests never spend credits.
+
+**Finals demo:** `.\scripts\demo.ps1` runs a request live, shows pending approvals, approves one,
+crashes the process right after sending (`SERVICE_CRASH_AT=after_send`), runs again, checks the
+outbox holds exactly one email and one invite, and prints the cost ledger. Rehearse without
+credits: `.\scripts\demo.ps1 -Mode fixtures -Request evals\cases\fixture_hard_cases.json`.
+
+**Live fix: new output field.** Add it to `output.prospect_fields` in `config/service.yaml`: a
+named field or any dotted path into the prospect (`buyer.role_start`, `triggers.0.event_date`,
+`route_fit.score`). Top-level result fields are in `output.result_fields`. A typo fails at job
+start, before any step or send.
+
+**When a step fails** (source down, source not wired, bad response): the job does not crash. It
+keeps finished work, holds the remaining prospects as cannot verify, ends `partial`, and logs the
+error (`svc logs <job_id>`). Budget used up ends `stopped_limit` the same way. Re-running resumes
+at the failed step.
 
 **Kill test:** run a job, kill it partway through (`Ctrl+C` or Task Manager), then run the same command again. Finished steps load from their checkpoints, and each email and invite is in `data/outbox/` exactly once.
 

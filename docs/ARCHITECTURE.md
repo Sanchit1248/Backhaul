@@ -28,6 +28,8 @@ flowchart TB
     S4 -- older than 30 days --> DROP[drop]
     S6 -- client / rival / DNC --> EXC[exclude]
     S7 -- buyer left, name-only --> HOLD2[hold: no verified buyer]
+    PIPE -- "step error / source down" --> PART[partial: rest held as cannot verify]
+    PIPE -- "budget used up" --> LIM[stopped_limit: partial result]
 
     subgraph STORE["SQLite ledger"]
         SL[(step log)]
@@ -54,9 +56,11 @@ flowchart TB
 | Approval before email/invite | `ledger.request_approval` → person → `decide` / `update_payload` | `steps/s09_approve.py` |
 | Each action once after a kill | outbox row with unique key; `started` → provider check → `done`; atomic file write | `steps/s10_send.py`, `mailer.py` |
 | Restart resumes | step log per (job, step) | `ledger.step`, `pipeline.py` |
+| A step breaks, job still finishes | unexpected step error → logged, active prospects held as cannot verify, status `partial`; the step is not checkpointed, so a re-run resumes there | `pipeline.py` |
 | Sources fail | retry with backoff, then `SourceUnavailable` → cannot verify | `sources/base.py` |
 | Cost limit, cost per call | `Budget.check()` before each paid call; every call is a cost row | `budget.py`, `ledger.costs` |
-| Hour-3 change, live fix | rules in one YAML file | `config/service.yaml` |
+| Hour-3 change, live fix | rules and output fields in one YAML file (`output.prospect_fields` takes dotted paths) | `config/service.yaml`, `pipeline.summarize` |
+| Cost matches provider | each Crustdata call logs estimated, reported (`X-Credits-Used`) and budgeted credits + request id; `svc cost --calls` | `sources/base.py`, `cli.py` |
 
 ## Design question answers
 - **100× volume:** several workers on a shared queue, Postgres instead of SQLite (same tables), Crustdata batch APIs, the response cache, and per-key rate limits.
