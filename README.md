@@ -17,7 +17,7 @@ of guessing.
 
 | | |
 |---|---|
-| **Run it** | `python -m service.web` → http://127.0.0.1:8000 (browser) · or `python -m service.cli run <request.json>` |
+| **Run it** | `python -m service.web` → http://127.0.0.1:8000 (browser) · or `python -m service.cli run <request.json>` | or | https://backhaul-cyan.vercel.app
 | **Live data** | Crustdata company, job, person and web APIs (default `sources.mode: live`) |
 | **Measured** | Live Pune → Mumbai job, 22 Nov 2026: 100 job posts → 36 hiring companies → 9 pass filters → 4 approval-ready drafts, **₹1,179** (Crustdata-reported), **₹295 per draft** |
 | **Checks** | 28 / 28 hard-case evals pass (no WRONG) · 143 tests pass, 26 skipped (saved live samples not in the repo) |
