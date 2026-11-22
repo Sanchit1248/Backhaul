@@ -13,19 +13,25 @@ Half the finals points come from these two judges. Every number below is either 
 | Our price | **₹10,000 per qualified, held meeting** *(our assumption, not a vendor quote; inside every published range below; willingness to pay still needs customer validation)* |
 | Optional plan | Monthly per watched route *(stretch; not priced yet)* |
 
-### What firms pay today (published market benchmarks, India, 2025–2026)
-These are agency-advertised prices and agency estimates, not audited market averages. Say "published benchmarks" on stage.
+### What firms pay today (published benchmarks, checked 22 Nov 2026)
+Agency-published prices and vendor guides, not audited market averages. Say "published
+benchmarks" on stage. Only figures we found on the cited page are listed; USD figures are
+converted at our config rate of ₹84/$ (conversion is ours).
 
 | Source | Per qualified meeting | Monthly retainer | Nature |
 |---|---|---|---|
-| MarginSales (Aug 2026) | ₹8,000–₹40,000 | ₹80,000–₹3,00,000 | Agency's Indian-market guidance |
-| Nico Digital (Sep 2026) | ₹8,000–₹25,000 | ₹1,00,000–₹2,50,000 (domestic SDR pods) | Agency's market estimates |
-| DigitalGrowPedia (2026) | ₹3,000–₹10,000 per **attended** BANT-qualified meeting + ₹15,000 setup | ₹35,000 (part-time SDR) | Advertised offer |
-| GrowthSparx (Oct 2026) | ₹10,000–₹25,000 per verified held meeting | ₹1.3–₹1.8 lakh (dedicated setter) | Modelled from staffing + tools, not a survey |
+| [MarginSales, "How much does outsourced cold calling cost?" (Aug 2026)](https://marginsales.com/blog/outsourced-cold-calling-cost) | $50–$200 per qualified appointment (≈ ₹4,200–₹16,800) | $2,000–$6,000 (page states ₹80,000–₹3,00,000) | Agency's own pricing guide |
+| [MarginSales, "Sales outreach agency pricing" (Aug 2026)](https://marginsales.com/blog/sales-outreach-agency-pricing) | $250–$1,000 per qualified meeting on pay-per-meeting deals (≈ ₹21,000–₹84,000) | tiers ₹80k / ₹1.5L / ₹3L | Agency's own pricing guide |
+| [GrowthSparx, "Cost per lead in India 2026" (Oct 2026)](https://growthsparx.com/blog/india-lead-generation-benchmarks-2026.html) | No India pay-per-meeting price list found (their finding); cites Leadium: $50–$300 SMB, $300–$600 mid-market, $600–$1,500+ C-suite | n/a | Benchmark roundup, second-hand for meeting prices |
 
-In-house alternative: junior SDR ₹4.5–₹7 lakh/year OTE, i.e. ₹37,500–₹58,300/month (Wisemonk 2026 India SDR guide); about ₹1.3 lakh/month fully loaded with tools and management (GrowthSparx model, Oct 2026).
+In-house alternative: junior SDR ₹4.5–₹7 lakh/year on-target earnings, i.e. ₹37,500–₹58,300/month before tools and management ([Wisemonk India SDR hiring guide, updated Aug 2026](https://www.wisemonk.io/blogs/sales-development-representatives-hiring-guide-india); an employer-of-record vendor, so a marketing source).
 
-> TODO(D): add the exact URLs for the four agency sources and Wisemonk before the finals (the research summary we have names them without links).
+Our ₹10,000 per held meeting (≈ $119) sits inside MarginSales' $50–$200 per qualified appointment and Leadium's SMB range, and well under MarginSales' $250–$1,000 pay-per-meeting deals.
+
+Removed after checking (do not quote on stage): MarginSales "₹8,000–₹40,000 per meeting" (not on the page),
+GrowthSparx "₹10,000–₹25,000 per held meeting" and "₹1.3–₹1.8 lakh/month setter" (not on the page),
+DigitalGrowPedia figures (pricing page refused automated reading, HTTP 402: check by hand before quoting),
+Nico Digital (no page found).
 
 ### Our cost per job (measured, from the ledger)
 Cost per meeting = **job cost in ₹ (`python -m service.cli cost <job_id>`) ÷ meetings sent**.
@@ -33,11 +39,13 @@ Cost per meeting = **job cost in ₹ (`python -m service.cli cost <job_id>`) ÷ 
 | Item | Value | Status |
 |---|---|---|
 | Crustdata credit prices (our key) | identify 0.2/match; company enrich 2; job/person search 0.03 per result; person enrich 1; web search/fetch 1 per page | from `GET /account/endpoints`, 22 Nov 2026 |
-| ₹ per Crustdata credit | `costs.crustdata_inr_per_credit` in config | **TODO(A): fill in**; event credits are sponsored, so quote the list price, not ₹0 |
+| ₹ per Crustdata credit | **₹25.20** (1 credit = $0.30 × ₹84/$) | list price, Crustdata billing page (pay-as-you-go), 22 Nov 2026: search $9 / 1k records = 0.03 credits each; person enrich from $0.30 = 1 credit; company enrich from $0.60 = 2 credits. Event credits are sponsored; we quote list price, not ₹0 |
 | LLM cost | logged per call by `llm.ask` | measured |
-| **Cost per job / per meeting** | _fill from `svc cost` after a live run_ | **TODO(D): measure on the live run** |
+| **Cost per job (live, measured)** | **₹1,179** (46.77 credits reported by Crustdata) for one Pune→Mumbai job: 8 candidates from fresh job posts → 4 drafts awaiting approval. Our ledger books ₹1,380 (54.77 credits) because calls that time out are booked at the estimate | measured 22 Nov 2026, jobs `live-pune-mumbai-2026-11-22-r4` + `-r6` (`svc cost`) |
+| **Cost per draft** | **₹295** (Crustdata-reported) / ₹345 (our ledger) | measured; LLM cost ₹0 (template drafts, no LLM call) |
+| **Cost per held meeting** | cost per draft ÷ share of drafts that become held meetings. At 1 in 5 (**our assumption**, not measured): ≈ ₹1,475–₹1,725 | assumption until real replies come in |
 
-Margin story (once measured): price ₹10,000 per held meeting − measured cost per meeting = gross margin per meeting. The agency charges for an SDR's time; we charge for a meeting that happened, so the client pays nothing for held or cannot-verify prospects.
+Margin story: price ₹10,000 per held meeting − ≈ ₹1,475–₹1,725 data cost per held meeting (measured cost per draft × our assumed 1-in-5 conversion) ≈ **₹8,275–₹8,525 gross margin per meeting**, before approver time and hosting. Say "measured cost per draft, assumed conversion" on stage. The agency charges for an SDR's time; we charge for a meeting that happened, so the client pays nothing for held or cannot-verify prospects.
 
 ### Why a 3PL would switch
 - **Pay per held meeting**, not a retainer: no meeting, no fee.
@@ -50,7 +58,7 @@ Margin story (once measured): price ₹10,000 per held meeting − measured cost
 | Question | Answer | Where it lives |
 |---|---|---|
 | What personal data do we touch? | Work data only: name, title, employer, role start/end dates, **business** email | `privacy.person_fields` in config |
-| Minimisation: what we never fetch or store | No personal emails, phone numbers, home addresses or personal posts. Our Crustdata key cannot even fetch contact data (contact enrich disabled) | CLAUDE.md rules; s07 |
+| Minimisation: what we never fetch or store | No personal emails, phone numbers, home addresses or personal posts. We request only `contact.business_emails` from Crustdata person enrichment, and keep an email only if Crustdata ties it to the buyer's verified employer id | CLAUDE.md rules; `sources/live_buyers.py` (`EMAIL_FIELDS`); s07 |
 | Matching the right person | Never match a person on name alone: the buyer's employer id must equal the company's id, and the current role is rechecked before drafting. A same-name person at another company is rejected | s07 buyer step; eval "Vidarbha Steel" |
 | Lookalike companies | Two close identity matches, or a domain mismatch → **hold**, never email | s03; evals "Shree Polymers", "Tungabhadra Paper" |
 | What happens when we're unsure | "Cannot verify", naming what record is missing, and the prospect goes to a person, never a guess. Undated news, sources that disagree, and failed sources all end here | s04; evals "Indus Chem", "Godavari Foods" |

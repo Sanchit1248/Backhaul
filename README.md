@@ -24,9 +24,9 @@ Each fact has a source. No trigger older than 30 days. No lookalike company or d
 | Crustdata company identify / enrichment | identity, locations, funding, news | yes | identify 0.2 credits per match (unmatched free); enrich 2 credits per company |
 | Crustdata job search | hiring triggers (posting date, location) | yes | 0.03 credits per result |
 | Crustdata web search + fetch | expansion news, exact passage | yes | 1 credit per page |
-| Crustdata person search / enrichment | buyer, current employer, role start | yes | search 0.03 per result; enrich 1 per person |
+| Crustdata person search / enrichment | buyer, current employer, role start, business email (tied to employer id) | yes | search 0.03 per result; enrich 1 per person, +1 with business email |
 
-Our key's limits (from `GET /account/endpoints`, 22 Nov 2026): 5 requests/min on identify, enrich and search (batch up to 25 identifiers per call); `/live` endpoints, batch endpoints and **person contact enrich (emails) are not enabled**.
+Our key's limits (from `GET /account/endpoints`, 22 Nov 2026): 5 requests/min on identify, enrich and search (batch up to 25 identifiers per call). **Checked in live runs on 22 Nov 2026:** web search + fetch (`/web/search/live`, `/web/enrich/live`) work, and person enrichment returns **business emails** (`contact.business_emails`, +1 credit); we request nothing else from contact data (no personal emails or phones). Batch work-history verification is not enabled. 1 credit = $0.30 list price (₹25.20 at ₹84/$); a live Pune→Mumbai job cost ₹1,179 (Crustdata-reported) for 4 drafts.
 | MCA / GST registry pages | legal name, principal place of business (fallback) | yes | free |
 | Company websites (careers, locations, press) | fallback triggers and locations | yes | free |
 | Client records (kickoff kit) | routes, capacity, clients, do-not-contact list | n/a | n/a |
