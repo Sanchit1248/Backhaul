@@ -60,6 +60,7 @@ buyer:
     - head of operations
     - chief operating officer
   max_candidates: 3
+  countries: [India]          # buyer must be located here (multinationals: not the Canada COO)
   fetch_business_email: true   # +1 credit per verified buyer; email kept only if tied to the employer id
 
 discovery:

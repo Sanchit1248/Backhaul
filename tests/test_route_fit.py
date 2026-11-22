@@ -116,3 +116,26 @@ def test_locations_outage_with_post_on_lane_still_fits():
     out = _run(p, _Src(exc=SourceUnavailable("ConnectError")))
     assert out.status == Status.ACTIVE and out.route_fit.level == "partial"
     assert out.cannot_verify and out.cannot_verify[0].label == "cannot verify"
+
+
+def test_on_lane_post_merged_into_event_is_promoted_to_lead():
+    abroad, pune = _post("Warehouse Supervisor", "Ciudad Juarez, Chih.", 12), \
+        _post("Logistics Lead", "Chakan, Pune, Maharashtra", 11)
+    abroad.extra_sources = list(pune.fact.sources)          # step 4 folded them into one event
+    p = Prospect(prospect_id="p", company=CompanyRef(name="Acme"), triggers=[abroad])
+    out = _run(p, _Src([Location(city="Austin", kind="hq", source=SRC)]))
+    assert out.status == Status.ACTIVE and "Chakan" in out.route_fit.reason
+    lead = out.triggers[0]
+    assert lead.fact.sources == pune.fact.sources and "Chakan" in lead.summary
+    assert lead.fact.value == "Logistics Lead" and lead.event_date == date(2026, 11, 11)
+    assert abroad.fact.sources[0] in lead.extra_sources      # nothing dropped
+
+
+def test_site_fit_still_leads_with_local_post():
+    abroad, pune = _post("Warehouse Coordinator", "Pelzer, SC", 14), \
+        _post("Warehouse Lead", "Pune, Maharashtra", 9)
+    p = Prospect(prospect_id="p", company=CompanyRef(name="Acme"), triggers=[abroad, pune])
+    office = Location(city="Pune", kind="office", source=SRC)
+    out = _run(p, _Src([office]))
+    assert out.status == Status.ACTIVE
+    assert "Pune" in out.triggers[0].summary

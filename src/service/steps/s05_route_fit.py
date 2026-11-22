@@ -25,7 +25,8 @@ from __future__ import annotations
 
 import re
 
-from ..models import CannotVerify, Fact, JobRequest, Location, Prospect, Route, RouteFit
+from ..models import (CannotVerify, Fact, JobRequest, Location, Prospect, Route, RouteFit,
+                      Source, Trigger)
 from ..sources.base import SourceUnavailable
 from . import Ctx, active, norm
 
@@ -74,38 +75,65 @@ def _fit(p: Prospect, loc: Location, r: Route, cfg: dict) -> RouteFit | None:
 
 
 _LOC_RAW = re.compile(r"location\.raw = '([^']+)'")
+_TITLE = re.compile(r"job_details\.title = '([^']+)'")
 
 
 def _post_fits(p: Prospect, routes: list[Route], cfg: dict) -> list[tuple[RouteFit, int]]:
-    """Route fits from hiring posts whose stated location is a lane end or a satellite town."""
+    """Route fits from hiring posts whose stated location is a lane end or a satellite town.
+    Looks at each trigger's own sources and at posts merged into it (extra_sources):
+    step 4 folds posts a few days apart into one event."""
     out: list[tuple[RouteFit, int]] = []
     for i, t in enumerate(p.triggers):
         if t.type != "hiring":
             continue
-        src = next((s for s in t.fact.sources if _LOC_RAW.search(s.excerpt)), None)
-        if src is None:
-            continue
-        raw = _LOC_RAW.search(src.excerpt).group(1)
-        for part in (x.strip() for x in raw.split(",")):
-            city = norm(part)
-            hub = cfg.get("nearby", {}).get(city)
-            for r in routes:
-                if city in (r.origin, r.destination):
-                    where = part.title()
-                elif hub in (r.origin, r.destination):
-                    where = f"{part.title()} (near {hub.title()})"
-                else:
-                    continue
-                when = f" on {t.event_date.isoformat()}" if t.event_date else ""
-                out.append((RouteFit(
-                    level="partial", score=cfg["partial_score"], route=r,
-                    reason=(f"hiring for a {t.fact.value} role in {where} (job post{when}); "
-                            f"spare capacity on {r.origin.title()} to {r.destination.title()} "
-                            f"({r.spare_trucks_per_week} trucks/week); site type not stated"),
-                    facts=[Fact(claim=f"{p.company.name} posted a {t.fact.value} job located "
-                                      f"in {raw}{when}", value=raw, sources=[src])]), i))
-                break
+        for src in [*t.fact.sources, *t.extra_sources]:
+            m = _LOC_RAW.search(src.excerpt)
+            if m:
+                fit = _post_fit(p, t, src, m.group(1), routes, cfg)
+                if fit:
+                    out.append((fit, i))
     return out
+
+
+def _post_fit(p: Prospect, t, src, raw: str, routes: list[Route], cfg: dict) -> RouteFit | None:
+    title = (_TITLE.search(src.excerpt).group(1) if _TITLE.search(src.excerpt)
+             else str(t.fact.value))
+    day = src.record_date or t.event_date
+    when = f" on {day.isoformat()}" if day else ""
+    for part in (x.strip() for x in raw.split(",")):
+        city = norm(part)
+        hub = cfg.get("nearby", {}).get(city)
+        for r in routes:
+            if city in (r.origin, r.destination):
+                where = part.title()
+            elif hub in (r.origin, r.destination):
+                where = f"{part.title()} (near {hub.title()})"
+            else:
+                continue
+            return RouteFit(
+                level="partial", score=cfg["partial_score"], route=r,
+                reason=(f"hiring for a {title} role in {where} (job post{when}); "
+                        f"spare capacity on {r.origin.title()} to {r.destination.title()} "
+                        f"({r.spare_trucks_per_week} trucks/week); site type not stated"),
+                facts=[Fact(claim=f"{p.company.name} posted a {title} job located "
+                                  f"in {raw}{when}", value=raw, sources=[src])])
+    return None
+
+
+def _lead_with(t: Trigger, src: Source) -> Trigger:
+    """The same event, re-led by the post on the lane, so the email cites that post."""
+    if src in t.fact.sources:
+        return t
+    title = (_TITLE.search(src.excerpt).group(1) if _TITLE.search(src.excerpt)
+             else str(t.fact.value))
+    raw = _LOC_RAW.search(src.excerpt).group(1)
+    day = src.record_date or t.event_date
+    claim = f"{t.fact.claim.split(' posted a ')[0]} posted a {title} job in {raw}" \
+        + (f" on {day.isoformat()}" if day else "")
+    rest = [s for s in [*t.fact.sources, *t.extra_sources] if s is not src]
+    return t.model_copy(update={
+        "summary": f"{title} job posted in {raw}", "event_date": day,
+        "fact": Fact(claim=claim, value=title, sources=[src]), "extra_sources": rest})
 
 
 def run(ctx: Ctx, prospects: list[Prospect]) -> list[Prospect]:
@@ -137,6 +165,11 @@ def run(ctx: Ctx, prospects: list[Prospect]) -> list[Prospect]:
             p.drop("no route fit: " + p.route_fit.reason)
         else:
             p.route_fit = best
+            if trig is None and post_fits:   # fit came from a site; still cite a local post
+                pf, trig = post_fits[0]
+                lead_src = pf.facts[0].sources[0]
+            elif trig is not None:
+                lead_src = best.facts[0].sources[0]
             if trig is not None:  # cite the post on the lane first
-                p.triggers.insert(0, p.triggers.pop(trig))
+                p.triggers.insert(0, _lead_with(p.triggers.pop(trig), lead_src))
     return prospects

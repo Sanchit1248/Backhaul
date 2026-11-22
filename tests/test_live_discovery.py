@@ -125,3 +125,89 @@ def test_business_email_kept_only_when_tied_to_employer_id():
 def test_no_email_when_only_other_employers_listed():
     fake = _EnrichFake([{"crustdata_company_id": 999, "email": "km@other.com", "status": "valid"}])
     assert lb.verify_employment(fake, _buyer()).business_email is None
+
+
+# ---- discovery posts kept and merged into step-4 triggers (LiveSources.triggers)
+from service.budget import Budget  # noqa: E402
+from service.ledger import Ledger  # noqa: E402
+from service.sources import live_signals as lsig  # noqa: E402
+from service.sources.base import SourceUnavailable  # noqa: E402
+from service.sources.live import LiveSources  # noqa: E402
+
+
+def _envelope(rows):
+    return {"data": {"job_listings": rows}, "url": "https://api.example/job/search",
+            "retrieved_at": "2026-11-22T00:00:00Z"}
+
+
+def _row(title, cid, raw, url):
+    return {"job_details": {"title": title, "url": url},
+            "company": {"basic_info": {"name": "Eaton", "crustdata_company_id": cid}},
+            "location": {"raw": raw}, "metadata": {"date_added": "2026-11-10T10:00:00"}}
+
+
+def test_discovery_posts_come_first_and_survive_restart(tmp_path, monkeypatch):
+    from service.models import CompanyRef
+    led = Ledger(tmp_path / "l.sqlite")
+    disc = _envelope([_row("Warehouse Lead", 6061963, "Pune, Maharashtra", "https://j/1"),
+                      _row("Logistics Exec", 999, "Mumbai", "https://j/2")])
+    abroad = lsig.map_job_listings(_envelope([
+        _row("Warehouse Supervisor", 6061963, "Ohio", "https://j/3"),
+        _row("Warehouse Lead", 6061963, "Pune, Maharashtra", "https://j/1")]),
+        CompanyRef(name="Eaton", crustdata_id="6061963"))
+    monkeypatch.setattr(lsig, "triggers", lambda client, company, since: abroad)
+    eaton = CompanyRef(name="Eaton", crustdata_id="6061963")
+
+    src = LiveSources(led, Budget(led, "job1", 100), client=object())
+    src._save_posts(disc)
+    first = src.triggers(eaton, date(2026, 10, 23))
+    assert [t.summary for t in first] == ["Warehouse Lead job posted in Pune, Maharashtra",
+                                          "Warehouse Supervisor job posted in Ohio"]  # no dup
+
+    fresh = LiveSources(led, Budget(led, "job1", 100), client=object())   # after a restart
+    assert [t.summary for t in fresh.triggers(eaton, date(2026, 10, 23))] == \
+        [t.summary for t in first]
+
+
+def test_company_search_outage_still_keeps_local_posts(tmp_path, monkeypatch):
+    from service.models import CompanyRef
+    led = Ledger(tmp_path / "l.sqlite")
+
+    def down(client, company, since):
+        raise SourceUnavailable("job_search 503")
+    monkeypatch.setattr(lsig, "triggers", down)
+    src = LiveSources(led, Budget(led, "job2", 100), client=object())
+    src._save_posts(_envelope([_row("Warehouse Lead", 6061963, "Pune", "https://j/1")]))
+    out = src.triggers(CompanyRef(name="Eaton", crustdata_id="6061963"), date(2026, 10, 23))
+    assert len(out) == 1 and "Pune" in out[0].summary
+
+
+class _PeopleFake:
+    def __init__(self, profiles):
+        self.profiles, self.calls = profiles, []
+
+    def call(self, operation, *, body=None, params=None):
+        self.calls.append((operation, body))
+        return {"data": {"profiles": self.profiles}, "url": "https://api.example/person/search",
+                "retrieved_at": "2026-11-22T00:00:00Z"}
+
+
+def _profile(name, country, title="Head of Supply Chain"):
+    return {"crustdata_person_id": hash(name) % 10000, "metadata": {"updated_at": "2026-11-16"},
+            "basic_profile": {"name": name, "location": {"country": country}},
+            "social_handles": {"professional_network_identifier": {"profile_url": f"https://x/{name}"}},
+            "experience": {"employment_details": {"current": [
+                {"title": title, "name": "L'Oreal", "crustdata_company_id": 1035606,
+                 "start_date": "2024-01-01"}]}}}
+
+
+def test_buyer_search_limited_to_lane_country_with_sourced_location(monkeypatch):
+    from service.models import CompanyRef
+    monkeypatch.setattr(lb, "_countries", lambda: ["India"])
+    fake = _PeopleFake([_profile("Canada COO", "Canada"), _profile("Pune Head", "India")])
+    out = lb.people(fake, CompanyRef(name="L'Oreal", crustdata_id="1035606"),
+                    ["head of supply chain"])
+    conds = fake.calls[0][1]["filters"]["conditions"]
+    assert {"field": "basic_profile.location.country", "type": "in", "value": ["India"]} in conds
+    assert [b.name for b in out] == ["Pune Head"]
+    assert any("location.country = 'India'" in s.excerpt for f in out[0].facts for s in f.sources)

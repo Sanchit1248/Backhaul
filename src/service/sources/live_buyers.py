@@ -145,8 +145,22 @@ def _rows(person: dict, kind: str) -> list[tuple[int, dict]]:
 
 # --------------------------------------------------------------- people ---
 
+def _countries() -> list[str]:
+    try:
+        from ..config import settings
+
+        return [c for c in settings().get("buyer", {}).get("countries") or [] if c]
+    except Exception:  # noqa: BLE001 - config unavailable in isolated tests
+        return []
+
+
 def people(client, company: CompanyRef, titles: list[str]) -> list[Buyer]:
-    """Current employer-specific buyer roles at `company`, best configured title first."""
+    """Current employer-specific buyer roles at `company`, best configured title first.
+
+    Config buyer.countries (e.g. [India]) limits the search to people located there and
+    re-checks each profile's basic_profile.location.country: a multinational's COO in
+    Canada is the wrong buyer for an Indian lane even though the employer id matches.
+    The location becomes a sourced fact on the buyer."""
     if not company.crustdata_id or str(company.crustdata_id) == "0" or not titles:
         return []
     try:
@@ -164,6 +178,10 @@ def people(client, company: CompanyRef, titles: list[str]) -> list[Buyer]:
         "fields": SEARCH_FIELDS,
         "limit": SEARCH_LIMIT,
     }
+    countries = _countries()
+    if countries:
+        body["filters"]["conditions"].append(
+            {"field": "basic_profile.location.country", "type": "in", "value": countries})
     resp = client.call("person_search", body=body)
     found: list[tuple[int, int, Buyer]] = []
     for i, prof in enumerate((resp.get("data") or {}).get("profiles") or []):
@@ -188,6 +206,12 @@ def people(client, company: CompanyRef, titles: list[str]) -> list[Buyer]:
         url = (((prof.get("social_handles") or {}).get("professional_network_identifier") or {})
                .get("profile_url"))
         pid = prof.get("crustdata_person_id")
+        loc_country = ((prof.get("basic_profile") or {}).get("location") or {}).get("country")
+        if countries and loc_country and loc_country not in countries:
+            continue          # stated location outside the lane's country: not this buyer
+        if loc_country:
+            srcs = [*srcs, cite(resp, f"profiles[{i}].basic_profile.location.country",
+                                loc_country, updated)]
         found.append((rank, i, Buyer(
             name=name, title=row["title"], profile_url=url,
             person_id=str(pid) if pid else None,

@@ -234,14 +234,17 @@ def hiring_job_body(job: JobRequest, records: ClientRecords, cfg: dict, since: d
 
 def discover_hiring_first(client, job: JobRequest, records: ClientRecords, *,
                           cfg: dict | None = None,
-                          notes: list[str] | None = None) -> list[CompanyRef]:
+                          notes: list[str] | None = None,
+                          posts_out: list[dict] | None = None) -> list[CompanyRef]:
     """Companies that posted a logistics/warehouse/supply-chain job in a route city (or a
     satellite town) inside the trigger window, kept only if the company index places
     them in India, in the target industries and headcount band.
 
     Ordered by number of matching posts, then the most recent post. Posts without a
     Crustdata company id are skipped (no identity to resolve) and counted in notes.
-    Step 4 re-fetches each company's posts as sourced triggers.
+    Step 4 re-fetches each company's posts as sourced triggers; the discovery response
+    itself is appended to `posts_out` (when given) so those local posts are not lost when
+    the company-wide search in step 4 returns only posts abroad.
     """
     from .live_signals import is_relevant_logistics_job_title, parse_date
 
@@ -257,6 +260,8 @@ def discover_hiring_first(client, job: JobRequest, records: ClientRecords, *,
     rows = data.get("job_listings")
     if not isinstance(rows, list):
         raise SourceUnavailable("crustdata.job_search response has no job_listings list")
+    if posts_out is not None:
+        posts_out.append(resp)
 
     stats: dict[str, list] = {}   # company id -> [posts, latest post date]
     no_id = irrelevant = 0
