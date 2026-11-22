@@ -252,7 +252,7 @@ on the job page to send it (the job's send step sends each email + invite exactl
       placeholder="from client records"></label>
     <label>Request date <span class=muted>(trigger window ends here)</span>
       <input name=request_date type=date value="{job.request_date.isoformat()}" required></label>
-    <label>Cost limit (Rs)<input name=budget_inr type=number min=1 step=1
+    <label>Cost limit (₹)<input name=budget_inr type=number min=1 step=1
       value="{int(default_budget)}" required></label>
   </div>
   <label class=check><input type=checkbox name=rehearsal value=1 {'' if live else 'checked'}>
@@ -342,7 +342,7 @@ on the job page to send it (the job's send step sends each email + invite exactl
         log = "".join(f"<li><span class=muted>{datetime.fromtimestamp(at):%H:%M:%S}</span> "
                       f"<span class='lvl {escape(lv)}'>{escape(lv)}</span> {escape(m)}</li>"
                       for at, lv, m in events[-60:])
-        return HTMLResponse(shell(request, "Job", f"""{flash(msg)}<div id=live{poll}>
+        return HTMLResponse(shell(request, job_title(j["req"]), f"""{flash(msg)}<div id=live{poll}>
 <section class="card jobhead">
   <div class=jobtitle>
     <div><p class=quote>&ldquo;{escape(j['text'])}&rdquo;</p>
@@ -492,6 +492,29 @@ def client_name() -> str:
     return _CLIENT["name"]
 
 
+ACRONYMS = {"fmcg": "FMCG", "it": "IT", "b2b": "B2B", "ev": "EV"}
+
+
+def nice_industry(ind: str | None) -> str:
+    """Test data stores industries in lower case ("fmcg"); live data in Title Case."""
+    if not ind:
+        return ""
+    if ind != ind.lower():
+        return ind
+    return " ".join(ACRONYMS.get(w, w.capitalize()) for w in ind.split())
+
+
+def job_title(req: dict) -> str:
+    """'Pune → Mumbai' from the request (structured route, else parsed from the text)."""
+    route = req.get("route") or []
+    if len(route) < 2:
+        try:
+            route = parse_request({**req, "job_id": req.get("job_id") or "x"}).route_filter
+        except Exception:  # noqa: BLE001 - heading only
+            route = []
+    return f"{route[0].title()} → {route[1].title()}" if len(route) >= 2 else "Job"
+
+
 def flash(msg: str) -> str:
     return (f"<div class=toast role=status><span>{escape(msg)}</span>"
             f"<button type=button class=toast-x aria-label=Dismiss>&times;</button></div>"
@@ -606,7 +629,7 @@ def render_meter(cost: float, budget: float) -> str:
     pct = min(100, cost / budget * 100) if budget else 0
     cls = "bad" if pct >= 90 else "warn" if pct >= 70 else "good"
     return (f"<div class='stat meter'><span class=muted>Cost</span>"
-            f"<b>Rs {cost:,.0f} <span class=muted>of Rs {budget:,.0f}</span></b>"
+            f"<b>₹{cost:,.0f} <span class=muted>of ₹{budget:,.0f}</span></b>"
             f"<div class=bar><div class='fill {cls}' style='width:{pct:.1f}%'></div></div></div>")
 
 
@@ -706,7 +729,7 @@ def render_job_row(j: dict) -> str:
     return (f"<tr onclick=\"location='/jobs/{escape(j['id'])}'\" class=link-row>"
             f"<td><a href='/jobs/{escape(j['id'])}'>{when}</a>{mode}</td>"
             f"<td>{escape(j['text'][:110])}</td><td>{badge(j['status'])}</td>"
-            f"<td>{_drafts(res) if res else ''}</td><td>Rs {j['cost']:,.0f}</td></tr>")
+            f"<td>{_drafts(res) if res else ''}</td><td>₹{j['cost']:,.0f}</td></tr>")
 
 
 def render_job_card(j: dict) -> str:
@@ -715,7 +738,7 @@ def render_job_card(j: dict) -> str:
     return (f"<a class='card jobcard' href='/jobs/{escape(j['id'])}'>"
             f"<div class=row>{badge(j['status'])}{mode}</div>"
             f"<p>{escape(j['text'][:120])}</p>"
-            f"<p class=muted>{_drafts(res) if res else 0} drafts &middot; Rs {j['cost']:,.0f}</p></a>")
+            f"<p class=muted>{_drafts(res) if res else 0} drafts &middot; ₹{j['cost']:,.0f}</p></a>")
 
 
 def _link(url: str) -> str:
@@ -794,7 +817,7 @@ def render_result(res: dict) -> str:
         trig_short = escape(t.get("summary", "")) if t else ""
         rows.append(f"""<details class=prospect data-status="{escape(st)}">
 <summary><span class=co><b>{escape(c.get('name', ''))}</b>
-  <span class=muted>{escape(c.get('industry') or '')}</span></span>
+  <span class=muted>{escape(nice_industry(c.get('industry')))}</span></span>
   {badge(st)}<span class=why>{escape(plain_reason(st, p.get('reason')))}
   {('<br><span class=muted>' + trig_short + '</span>') if trig_short else ''}</span></summary>
 <div class=pdetail>{''.join(detail) or '<p class=muted>No further detail.</p>'}</div>
@@ -802,7 +825,7 @@ def render_result(res: dict) -> str:
     notes = "".join(f"<li>{escape(n)}</li>" for n in res.get("notes", []))
     return f"""<section class=card id=result>
 <div class=row><h2>Result</h2>{badge(res.get('status', ''))}
-  <span class=muted>Rs {res.get('cost_inr', 0):,.2f}</span></div>
+  <span class=muted>₹{res.get('cost_inr', 0):,.2f}</span></div>
 <div class=tiles>{tiles}<button type=button class='tile all' data-filter=''>
   <b>{len(ps)}</b><span>All</span></button></div>
 <div class=plist>{''.join(rows) or '<p class=muted>No companies found.</p>'}</div>
@@ -870,7 +893,7 @@ def render_action(a: dict, run_cost_inr: float, csrf: str, next_: str = "/approv
     edited = (f" <span class=tag>edited by {escape(d['edited_by'])}</span>"
               if d.get("edited_by") else "")
     queued = p.get("cost_inr_so_far")
-    queued_s = f"Rs {queued:.2f} when queued &middot; " if isinstance(queued, int | float) else ""
+    queued_s = f"₹{queued:.2f} when queued &middot; " if isinstance(queued, int | float) else ""
     nxt = ""
     if keys and idx + 1 < len(keys):
         nxt = (f"<a class='btn ghost' href='#a-{escape(keys[idx + 1])}'>"
@@ -882,7 +905,7 @@ def render_action(a: dict, run_cost_inr: float, csrf: str, next_: str = "/approv
   <div class=row><h2>{escape(p.get('company', ''))}{edited}</h2>
     <span class=muted>draft {idx + 1} of {total}</span></div>
   <p class=muted>{escape(a['kind'])} &middot; job <a href="/jobs/{escape(a['run_id'])}">{escape(a['run_id'])}</a>
-    &middot; key <code>{k}</code> &middot; cost so far: {queued_s}Rs {run_cost_inr:.2f} for the job now</p>
+    &middot; key <code>{k}</code> &middot; cost so far: {queued_s}₹{run_cost_inr:.2f} for the job now</p>
   <div class=review>
     <div class=email>
       <p><b>To:</b> {escape(d.get('to', ''))}<br><b>Subject:</b> {escape(d.get('subject', ''))}</p>
