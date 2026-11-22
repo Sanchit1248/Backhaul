@@ -1225,8 +1225,8 @@ backdrop-filter:blur(16px) saturate(1.4);border:1px solid color-mix(in srgb,var(
 .auth-brand{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;margin-bottom:22px}
 .auth-brand .logo{width:64px;height:64px}.auth-brand .logo svg{width:64px;height:64px}
 .auth-brand h2{font-size:26px;letter-spacing:-.03em}.auth-brand p{margin:0}
-.pw{position:relative}.pw input{padding-right:48px}
-.pw-toggle{position:absolute;right:4px;bottom:4px;width:40px;height:40px;border:0;background:none;color:var(--muted);
+.pw{position:relative;display:block;margin-top:6px}.pw input{padding-right:52px;margin:0}
+.pw-toggle{position:absolute;right:6px;left:auto;top:50%;transform:translateY(-50%);width:40px;height:40px;border:0;background:none;color:var(--muted);
 border-radius:8px;cursor:pointer;display:grid;place-items:center;transition:background .2s,color .2s}
 .pw-toggle:hover{background:var(--soft);color:var(--fg)}.pw-toggle:focus-visible{outline:0;box-shadow:0 0 0 3px var(--ring)}
 .pw-toggle .eye-off{display:none}.pw-toggle[aria-pressed=true] .eye{display:none}.pw-toggle[aria-pressed=true] .eye-off{display:block}
