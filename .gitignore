@@ -1,0 +1,30 @@
+# secrets
+.env
+*.key
+credentials*.json
+.claude/settings.local.json
+
+# runtime data (ledger, http cache, client records)
+data/
+*.sqlite
+*.sqlite-*
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+
+# node (if a UI gets added)
+node_modules/
+
+# os / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
