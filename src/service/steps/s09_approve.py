@@ -15,6 +15,7 @@ from __future__ import annotations
 import time
 from datetime import datetime
 
+from ..core.memory import AccountMemory, company_key
 from ..ledger import idem_key
 from ..models import Prospect, Status
 from . import Ctx
@@ -71,9 +72,15 @@ def run(ctx: Ctx, prospects: list[Prospect]) -> list[Prospect]:
         if p.draft is None or p.status not in (Status.ACTIVE, Status.AWAITING_APPROVAL):
             continue
         key = outbox_key(ctx.job.job_id, p.prospect_id)
-        if ctx.ledger.get_action(key) is None and (why := recontact_reason(ctx, p)):
-            p.exclude(why)
-            continue
+        mem = AccountMemory(ctx.ledger)
+        ckey = company_key(p.company.crustdata_id, p.company.name)
+        if ctx.ledger.get_action(key) is None:
+            if why := recontact_reason(ctx, p):
+                p.exclude(why)
+                continue
+            if why := mem.hold_reason(ckey, exclude_job=ctx.job.job_id):
+                p.hold(why)   # account memory: recently contacted or rejected
+                continue
         payload = {"prospect_id": p.prospect_id, "company": p.company.name,
                    "route_fit": p.route_fit.reason,
                    "route_fit_detail": _route_fit_detail(p),
@@ -85,4 +92,6 @@ def run(ctx: Ctx, prospects: list[Prospect]) -> list[Prospect]:
                     "rejected": Status.REJECTED, "done": Status.SENT}.get(status, Status.ACTIVE)
         if p.status == Status.REJECTED:
             p.reason = "rejected by approver"
+        elif status == "pending_approval":
+            mem.record_action(ckey, p.company.name, "queued", job_id=ctx.job.job_id)
     return prospects

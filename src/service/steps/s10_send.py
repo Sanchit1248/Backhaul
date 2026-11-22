@@ -8,6 +8,7 @@ already sent; SMTP: check sent folder / Message-ID before retrying).
 """
 from __future__ import annotations
 
+from ..core.memory import AccountMemory, company_key
 from ..faults import maybe_crash
 from ..mailer import send
 from ..models import Prospect, Status
@@ -43,4 +44,7 @@ def run(ctx: Ctx, prospects: list[Prospect]) -> list[Prospect]:
         p.outbox = [res]
         if res["status"] == "done":
             p.status = Status.SENT
+            AccountMemory(ctx.ledger).record_action(
+                company_key(p.company.crustdata_id, p.company.name), p.company.name, "sent",
+                job_id=ctx.job.job_id)
     return prospects

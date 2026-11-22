@@ -4,6 +4,35 @@
 client:
   records_file: tests/fixtures/client_records.json   # replace with kickoff-kit records
 
+tenant_id: default          # every evidence / memory row carries it (one 3PL per deployment today)
+
+# ---- LaneLead layers (docs/LANELEAD.md) ------------------------------------
+routes:
+  adapter: file             # fleetbase | file. fleetbase key: FLEETBASE_API_KEY in .env
+  file: tests/fixtures/routes_sample.json   # JSON file or folder of CSVs (kickoff data here)
+  fallback_to_file: true    # Fleetbase down/no key -> file adapter, with a note in the result
+  fleetbase:
+    base_url: http://localhost:8000    # or FLEETBASE_API_URL in .env
+    page_limit: 500
+
+memory:
+  recontact_days: 90        # account memory: hold a company we SENT to within N days
+  rejected_hold_days: 0     # >0: also hold a company whose draft was rejected within N days.
+                            # 0 = off: a rejected draft does not block the company in a later
+                            # job (tests/test_recontact.py, approval.recontact_days)
+
+churn:
+  window_weeks: 8           # last N weeks of orders vs the N weeks before
+  min_history_weeks: 12     # less history than this -> cannot verify
+  bands:                    # volume drop (fraction) -> risk level; checked high first
+    high: 0.50
+    medium: 0.25
+  weights: {volume_drop: 1.0}
+
+chat:
+  use_llm_parser: true      # rules first; Claude tool calling only when rules find no task
+  max_targets_shown: 10
+
 sources:
   mode: live                # live = Crustdata + web (screening/finals). Tests and evals ask
                             # for fixtures themselves; `svc run --mode fixtures` for rehearsal
