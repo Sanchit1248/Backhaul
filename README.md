@@ -4,7 +4,7 @@
 
 The service books a first meeting between a 3PL's sales head and the right buyer at a company that has shown a real expansion trigger in the last 30 days and ships near a route where the 3PL has spare truck capacity. It does the whole sales development job, from the request to the sent invite. A person approves every email and invite before it goes out.
 
-This is our prep repo. **At kickoff, all build commits move to the organizer repo** ([docs/TEAM.md](docs/TEAM.md#kickoff-day-runbook)). Who builds what: [docs/WORKSTREAMS.md](docs/WORKSTREAMS.md). Full plan: [docs/PLAN.md](docs/PLAN.md).
+This is our prep repo. **At kickoff, all build commits move to the organizer repo** ([docs/TEAM.md](docs/TEAM.md#kickoff-day-runbook)). Module map and remaining work: [docs/WORKSTREAMS.md](docs/WORKSTREAMS.md). Full plan: [docs/PLAN.md](docs/PLAN.md).
 
 ## The job, and who pays for it today
 Outbound sales development for a 3PL: find, qualify and book meetings with new shippers. Today 3PLs pay lead-generation and SDR agencies (per meeting or a monthly retainer), or the salaries of an in-house SDR team.
