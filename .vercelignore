@@ -15,3 +15,5 @@ tests/*
 .env.local
 .env*.local
 .vercel/
+*.mp4
+*.mov
