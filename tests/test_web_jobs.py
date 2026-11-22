@@ -32,7 +32,8 @@ def _csrf(html: str) -> str:
 def test_home_has_prompt_box(web):
     _, _, client, _ = web
     html = client.get("/").text
-    assert 'name=prompt' in html and "Jobs" in html and "Pending approvals" in html
+    assert 'name=prompt' in html and "/jobs" in html and "/approvals" in html
+    assert "data-example" in html                                 # example chips
 
 
 def test_parse_shows_what_was_understood(web):
@@ -59,7 +60,8 @@ def test_full_browser_flow_sends_once(web):
     assert runner.wait(job_id, timeout=120) == 0, runner.log_tail(job_id)
 
     page = client.get(f"/jobs/{job_id}").text
-    assert "awaiting approval" in page and "Kaveri Agro Foods" in page
+    assert "Draft ready" in page and "Kaveri Agro Foods" in page
+    assert "class=tracker" in page and "Find hiring companies" in page
     assert "lookalike" in page and "do-not-contact" in page          # reasons shown
     assert "Waiting for your approval" in page
 

@@ -64,7 +64,7 @@ def test_login_disabled_without_password(tmp_path):
 def test_page_shows_email_claims_sources_fit_buyer_cost(setup):
     led, client, _ = setup
     login(client)
-    html = client.get("/").text
+    html = client.get("/approvals").text
     a = first_pending(led)
     p, d = a["payload"], a["payload"]["draft"]
     assert d["to"] in html and "Approve" in html and "Reject" in html and "Edit" in html
