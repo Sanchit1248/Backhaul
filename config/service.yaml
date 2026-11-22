@@ -93,7 +93,12 @@ privacy:
   mask_in_logs: true
 
 output:
-  required_fields: [status, prospects, cost_inr]
+  required_fields: [status, prospects, cost_inr]   # always in the printed result
+  result_fields: [job_id, meetings_wanted, cost_usd, notes]   # any JobResult field
+  # per-prospect columns: a name (company, status, reason, trigger, route_fit, buyer,
+  # cannot_verify) or a dotted path into the Prospect, e.g. buyer.role_start,
+  # triggers.0.event_date, route_fit.score. Live fix "new output field" = add it here.
+  prospect_fields: [company, status, reason, trigger, route_fit, buyer, cannot_verify]
 
 llm:
   model: claude-opus-5-5

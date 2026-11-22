@@ -19,7 +19,7 @@ import sys
 
 from .config import DATA_DIR, settings, usd_to_inr
 from .ledger import Ledger
-from .pipeline import run, summarize
+from .pipeline import result_summary, run
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -54,8 +54,7 @@ def main(argv: list[str] | None = None) -> int:
         out = DATA_DIR / "results" / f"{res.job_id}.json"
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(res.model_dump_json(indent=2), encoding="utf-8")
-        print(json.dumps({"job_id": res.job_id, "status": res.status, "cost_inr": res.cost_inr,
-                          "prospects": summarize(res), "full_result": str(out)}, indent=2))
+        print(json.dumps(result_summary(res, full_result=str(out)), indent=2))
     elif args.cmd == "pending":
         pending = ledger.pending_approvals()
         if args.json:
