@@ -13,7 +13,7 @@ from ..mailer import send
 from ..models import Prospect, Status
 from . import Ctx
 from .s06_exclude import exclusion_reason
-from .s09_approve import outbox_key
+from .s09_approve import outbox_key, recontact_reason
 
 
 def _send(payload: dict) -> dict:
@@ -31,6 +31,12 @@ def run(ctx: Ctx, prospects: list[Prospect]) -> list[Prospect]:
             continue
         if a["status"] != "done" and (reason := exclusion_reason(p, ctx.client)):
             p.exclude(reason + " (re-checked before send)")
+            continue
+        # two jobs' drafts to one person approved together: only the first is sent
+        if a["status"] == "approved" and (
+                why := recontact_reason(ctx, p, statuses=("started", "done"))):
+            ctx.ledger._set_action(key, "expired", {"reason": why})
+            p.exclude(why + " (re-checked before send)")
             continue
         res = ctx.ledger.action(ctx.job.job_id, "send_email", key, a["payload"], _send,
                                 needs_approval=True)

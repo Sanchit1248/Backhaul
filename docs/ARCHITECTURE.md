@@ -56,6 +56,7 @@ flowchart TB
 | Approval before email/invite | `ledger.request_approval` → person → `decide` / `update_payload` | `steps/s09_approve.py` |
 | Each action once after a kill | outbox row with unique key; `started` → provider check → `done`; atomic file write | `steps/s10_send.py`, `mailer.py` |
 | Restart resumes | step log per (job, step) | `ledger.step`, `pipeline.py` |
+| No double contact across jobs | before queueing and before sending, other jobs' outbox rows to the same recipient/company within `approval.recontact_days` exclude the prospect; purge keeps contact hashes | `steps/s09_approve.py`, `s10_send.py`, `Ledger.prior_contacts` |
 | A step breaks, job still finishes | unexpected step error → logged, active prospects held as cannot verify, status `partial`; the step is not checkpointed, so a re-run resumes there | `pipeline.py` |
 | Sources fail | retry with backoff, then `SourceUnavailable` → cannot verify | `sources/base.py` |
 | Cost limit, cost per call | `Budget.check()` before each paid call; every call is a cost row | `budget.py`, `ledger.costs` |

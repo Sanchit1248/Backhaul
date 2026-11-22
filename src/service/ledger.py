@@ -68,6 +68,22 @@ CREATE TABLE IF NOT EXISTS events (
 """
 
 
+def contact_hash(email: str) -> str:
+    return hashlib.sha256(email.strip().lower().encode()).hexdigest()[:32]
+
+
+def contact_keys(payload: dict) -> dict:
+    """Who an outbox payload contacts, as hashes that survive the retention purge:
+    to_hash = hash of the recipient address, company_key = Crustdata company id."""
+    if isinstance(payload.get("contact"), dict):
+        return {"to_hash": payload["contact"].get("to_hash"),
+                "company_key": payload["contact"].get("company_key")}
+    to = ((payload.get("draft") or {}).get("to") or "").strip()
+    company = (payload.get("buyer") or {}).get("company_id")
+    return {"to_hash": contact_hash(to) if to else None,
+            "company_key": str(company) if company else None}
+
+
 def idem_key(*parts: Any) -> str:
     """Deterministic key from the business identity of an action (NOT a timestamp/uuid)."""
     raw = json.dumps(parts, sort_keys=True, default=str)
@@ -221,6 +237,31 @@ class Ledger:
         if cur.rowcount != 1:
             raise ValueError(f"action {key} cannot be edited (missing or already sent)")
 
+    # ---- no double contact across jobs ---------------------------------
+    LIVE_CONTACT = ("pending_approval", "approved", "started", "done")
+
+    def prior_contacts(self, run_id: str, email: str | None, company_key: str | None,
+                       since: float, statuses: tuple[str, ...] = LIVE_CONTACT) -> list[dict]:
+        """send_email actions from OTHER jobs to the same recipient (or, if company_key
+        is given, the same company) updated since `since`, in one of `statuses`.
+        Works on purged rows too: they keep contact hashes (see purge_person_data)."""
+        want_to = contact_hash(email) if email else None
+        out = []
+        rows = self.db.execute(
+            "SELECT idem_key, run_id, payload, status, updated_at FROM actions"
+            " WHERE kind='send_email' AND run_id<>? AND updated_at>=? ORDER BY updated_at",
+            (run_id, since)).fetchall()
+        for key, other_run, payload, status, at in rows:
+            if status not in statuses:
+                continue
+            c = contact_keys(json.loads(payload))
+            if (want_to and c["to_hash"] == want_to) or \
+                    (company_key and c["company_key"] == company_key):
+                out.append({"key": key, "run_id": other_run, "status": status, "at": at,
+                            "same": "recipient" if want_to and c["to_hash"] == want_to
+                            else "company"})
+        return out
+
     def actions_for_run(self, run_id: str) -> list[dict]:
         keys = self.db.execute("SELECT idem_key FROM actions WHERE run_id=?", (run_id,))
         return [self.get_action(k) for (k,) in keys.fetchall()]
@@ -343,9 +384,11 @@ class Ledger:
                         continue
                     new_status = status if status in ("done", "rejected", "expired") else "expired"
                     db.execute(
-                        "UPDATE actions SET payload=?, status=?, updated_at=? WHERE idem_key=?",
+                        "UPDATE actions SET payload=?, status=? WHERE idem_key=?",
                         (json.dumps({"redacted": True, "company": pl.get("company"),
-                                     "purged_at": now}), new_status, now, key))
+                                     "contact": contact_keys(pl),   # hashes only
+                                     "purged_at": now}), new_status, key))
+                    # updated_at kept: the recontact window counts from the real send
         for f in [*files, *cache]:
             f.unlink(missing_ok=True)
         if counts["runs"] or counts["cache_files"]:

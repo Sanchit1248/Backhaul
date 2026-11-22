@@ -101,6 +101,8 @@ email:
 
 approval:
   irreversible: [send_email, send_invite]
+  recontact_days: 90          # no second email to a recipient/company another job already
+  recontact_scope: [recipient, company]   # queued, approved or sent within this window
 
 privacy:
   person_fields: [name, title, employer, role_start, role_end, business_email]
