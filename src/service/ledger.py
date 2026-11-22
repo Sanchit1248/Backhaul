@@ -187,6 +187,7 @@ class Ledger:
     def pending_approvals(self) -> list[dict]:
         rows = self.db.execute(
             "SELECT idem_key, run_id, kind, payload FROM actions WHERE status='pending_approval'"
+            " ORDER BY rowid"
         ).fetchall()
         return [{"key": k, "run_id": r, "kind": kd, "payload": json.loads(p)}
                 for k, r, kd, p in rows]

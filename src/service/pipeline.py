@@ -67,6 +67,18 @@ def run(raw_request: dict, ledger: Ledger | None = None) -> JobResult:
                     p.hold(f"budget limit reached before step {name}")
             status = "stopped_limit"
             break
+        except Exception as e:  # noqa: BLE001 - a broken source/step must not kill the job
+            # Unexpected failure (source not wired, missing key, bad response shape).
+            # Keep finished work, hold the rest as cannot-verify, report partial. The
+            # step is NOT checkpointed, so a re-run after the fix resumes here.
+            err = f"{type(e).__name__}: {e}"
+            ledger.log(job.job_id, "error", f"{name} failed: {err}")
+            ctx.notes.append(f"cannot verify: step {name} failed ({err}); partial result")
+            for p in prospects:
+                if p.active:
+                    p.hold(f"cannot verify: step {name} failed")
+            status = "partial"
+            break
         prospects = [Prospect.model_validate(d) for d in data]
         maybe_crash(f"after:{name}")
     for _name, fn in ALWAYS:  # free + idempotent: always finish queued/approved actions
