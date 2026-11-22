@@ -1,0 +1,1302 @@
+{
+ "_note": "TEST/DEMO FIXTURE. Fictional 3PL lanes, trucks, clients and 17 weeks of orders (weeks of 2026-07-27 .. 2026-11-16). Same shape the Fleetbase adapter produces; scripts/seed_fleetbase.py loads it into Fleetbase.",
+ "vehicles": [
+  {
+   "id": "MH12-TRK-1",
+   "lane": "mumbai-pune",
+   "trips_per_week": 4,
+   "payload_capacity_kg": 9000
+  },
+  {
+   "id": "MH12-TRK-2",
+   "lane": "mumbai-pune",
+   "trips_per_week": 4,
+   "payload_capacity_kg": 9000
+  },
+  {
+   "id": "MH12-TRK-3",
+   "lane": "mumbai-pune",
+   "trips_per_week": 4,
+   "payload_capacity_kg": 9000
+  },
+  {
+   "id": "MH12-TRK-4",
+   "lane": "mumbai-pune",
+   "trips_per_week": 4,
+   "payload_capacity_kg": 9000
+  },
+  {
+   "id": "MH15-TRK-1",
+   "lane": "mumbai-nashik",
+   "trips_per_week": 3,
+   "payload_capacity_kg": 9000
+  },
+  {
+   "id": "MH15-TRK-2",
+   "lane": "mumbai-nashik",
+   "trips_per_week": 3,
+   "payload_capacity_kg": 9000
+  }
+ ],
+ "clients": [
+  {
+   "id": "CL-01",
+   "name": "Mahalaxmi Textiles",
+   "city": "pune"
+  },
+  {
+   "id": "CL-02",
+   "name": "Sahyog Polymers Pvt Ltd",
+   "city": "nashik"
+  },
+  {
+   "id": "CL-03",
+   "name": "Western Ghats Agro",
+   "city": "pune"
+  }
+ ],
+ "orders": [
+  {
+   "id": "ORD-0001",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-07-27T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0002",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-07-28T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0003",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-07-29T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0004",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-07-30T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0005",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-07-27T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0006",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-07-28T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0007",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-07-29T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0008",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-07-30T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0009",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-07-31T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0010",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-07-27T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0011",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-03T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0012",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-04T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0013",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-05T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0014",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-06T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0015",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-03T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0016",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-04T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0017",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-05T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0018",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-06T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0019",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-07T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0020",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-03T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0021",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-10T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0022",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-11T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0023",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-12T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0024",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-13T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0025",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-10T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0026",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-11T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0027",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-12T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0028",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-13T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0029",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-14T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0030",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-10T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0031",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-17T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0032",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-18T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0033",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-19T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0034",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-20T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0035",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-17T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0036",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-18T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0037",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-19T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0038",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-20T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0039",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-21T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0040",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-17T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0041",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-24T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0042",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-25T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0043",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-26T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0044",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-27T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0045",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-24T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0046",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-25T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0047",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-26T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0048",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-27T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0049",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-28T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0050",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-24T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0051",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-31T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0052",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-01T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0053",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-02T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0054",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-03T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0055",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-31T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0056",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-01T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0057",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-02T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0058",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-03T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0059",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-04T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0060",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-08-31T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0061",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-07T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0062",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-08T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0063",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-09T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0064",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-10T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0065",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-07T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0066",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-08T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0067",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-09T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0068",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-10T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0069",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-11T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0070",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-07T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0071",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-14T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0072",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-15T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0073",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-16T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0074",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-17T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0075",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-14T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0076",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-15T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0077",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-16T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0078",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-17T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0079",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-18T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0080",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-14T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0081",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-21T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0082",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-22T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0083",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-23T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0084",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-24T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0085",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-21T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0086",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-22T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0087",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-23T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0088",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-28T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0089",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-29T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0090",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-30T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0091",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-10-01T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0092",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-28T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0093",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-29T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0094",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-09-30T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0095",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-10-05T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0096",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-10-06T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0097",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-10-07T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0098",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-10-08T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0099",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-10-05T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0100",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-10-06T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0101",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-10-07T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0102",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-10-12T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0103",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-10-13T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0104",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-10-14T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0105",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-10-15T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0106",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-10-12T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0107",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-10-13T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0108",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-10-14T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0109",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-10-19T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0110",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-10-20T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0111",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-10-21T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0112",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-10-22T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0113",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-10-19T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0114",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-10-26T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0115",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-10-27T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0116",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-10-28T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0117",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-10-29T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0118",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-10-26T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0119",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-11-02T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0120",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-11-03T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0121",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-11-04T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0122",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-11-05T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0123",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-11-02T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0124",
+   "customer": "CL-03",
+   "origin": "pune",
+   "destination": "nashik",
+   "scheduled_at": "2026-11-02T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0125",
+   "customer": "CL-03",
+   "origin": "pune",
+   "destination": "nashik",
+   "scheduled_at": "2026-11-03T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0126",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-11-09T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0127",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-11-10T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0128",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-11-11T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0129",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-11-12T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0130",
+   "customer": "CL-02",
+   "origin": "nashik",
+   "destination": "mumbai",
+   "scheduled_at": "2026-11-09T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0131",
+   "customer": "CL-03",
+   "origin": "pune",
+   "destination": "nashik",
+   "scheduled_at": "2026-11-09T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0132",
+   "customer": "CL-03",
+   "origin": "pune",
+   "destination": "nashik",
+   "scheduled_at": "2026-11-10T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "completed"
+  },
+  {
+   "id": "ORD-0133",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-11-16T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "created"
+  },
+  {
+   "id": "ORD-0134",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-11-17T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "created"
+  },
+  {
+   "id": "ORD-0135",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-11-18T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "created"
+  },
+  {
+   "id": "ORD-0136",
+   "customer": "CL-01",
+   "origin": "pune",
+   "destination": "mumbai",
+   "scheduled_at": "2026-11-19T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "created"
+  },
+  {
+   "id": "ORD-0137",
+   "customer": "CL-03",
+   "origin": "pune",
+   "destination": "nashik",
+   "scheduled_at": "2026-11-16T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "created"
+  },
+  {
+   "id": "ORD-0138",
+   "customer": "CL-03",
+   "origin": "pune",
+   "destination": "nashik",
+   "scheduled_at": "2026-11-17T09:00:00+05:30",
+   "weight_kg": 6000,
+   "status": "created"
+  }
+ ]
+}
