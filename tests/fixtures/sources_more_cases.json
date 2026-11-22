@@ -1,0 +1,808 @@
+{
+ "_note": "TEST FIXTURE: fictional companies (.example domains), one per hard case not covered by sources_basic.json. Request date for these cases: 2026-11-20 (30-day window starts 2026-10-21). Never used in live mode.",
+ "discover": [
+  {
+   "name": "Godavari Foods",
+   "domain": "godavarifoods.example"
+  },
+  {
+   "name": "Malwa Textiles",
+   "domain": "malwatextiles.example"
+  },
+  {
+   "name": "Ratnagiri Foods",
+   "domain": "ratnagirifoods.example"
+  },
+  {
+   "name": "Narmada Cement",
+   "domain": "narmadacement.example"
+  },
+  {
+   "name": "Tapti Plastics",
+   "domain": "taptiplastics.example"
+  },
+  {
+   "name": "Krishna Auto Parts",
+   "domain": "krishnaauto.example"
+  },
+  {
+   "name": "Mahalaxmi Textiles",
+   "domain": "mahalaxmitextiles.example"
+  },
+  {
+   "name": "Rival Freight Lines",
+   "domain": "rivalfreight.example"
+  },
+  {
+   "name": "Bhima Sugar",
+   "domain": "bhimasugar.example"
+  },
+  {
+   "name": "Tungabhadra Paper",
+   "domain": "tungabhadrapaper.example"
+  },
+  {
+   "name": "Wardha Dairy",
+   "domain": "wardhadairy.example"
+  },
+  {
+   "name": "Kolhapur Castings",
+   "domain": "kolhapurcastings.example"
+  },
+  {
+   "name": "Solapur Ceramics",
+   "domain": "solapurceramics.example"
+  }
+ ],
+ "companies": {
+  "Godavari Foods": {
+   "_case": "funding: two sources, different amounts, same event -> cannot verify (sources disagree)",
+   "identify": [
+    {
+     "score": 0.95,
+     "company": {
+      "name": "Godavari Foods Pvt Ltd",
+      "domain": "godavarifoods.example",
+      "crustdata_id": "cd-2001",
+      "industry": "fmcg",
+      "headcount": 800
+     }
+    }
+   ],
+   "locations": [
+    {
+     "city": "pune",
+     "kind": "plant",
+     "source": {
+      "url": "https://api.crustdata.example/company/cd-2001",
+      "kind": "api_response",
+      "excerpt": "locations[0] = {city: Pune, type: plant}",
+      "record_date": "2026-11-01",
+      "field_path": "locations[0]"
+     }
+    }
+   ],
+   "triggers": [
+    {
+     "type": "funding",
+     "summary": "Series B (Rs 120 crore per Crustdata)",
+     "event_date": "2026-11-12",
+     "fact": {
+      "claim": "Godavari Foods raised a Series B of Rs 120 crore on 12 Nov 2026",
+      "sources": [
+       {
+        "url": "https://api.crustdata.example/company/cd-2001/funding",
+        "kind": "api_response",
+        "excerpt": "funding_rounds[0] = {type: Series B, amount_inr: 120 crore, date: 2026-11-12}",
+        "record_date": "2026-11-12"
+       }
+      ],
+      "value": "Series B, INR 120 crore"
+     }
+    },
+    {
+     "type": "funding",
+     "summary": "Series B (Rs 80 crore per news)",
+     "event_date": "2026-11-13",
+     "fact": {
+      "claim": "Godavari Foods raised a Series B of Rs 80 crore",
+      "sources": [
+       {
+        "url": "https://news.example/godavari-foods-series-b",
+        "kind": "web_page",
+        "excerpt": "Godavari Foods has raised Rs 80 crore in a Series B round.",
+        "record_date": "2026-11-13"
+       }
+      ],
+      "value": "Series B, INR 80 crore"
+     }
+    }
+   ],
+   "people": [
+    {
+     "name": "Sameer Kale",
+     "title": "Head of Supply Chain",
+     "person_id": "p-21",
+     "employer_id": "cd-2001",
+     "employer_name": "Godavari Foods Pvt Ltd",
+     "role_start": "2023-01-01",
+     "profile_url": "https://api.crustdata.example/person/p-21",
+     "business_email": "sameer.kale@godavarifoods.example"
+    }
+   ]
+  },
+  "Malwa Textiles": {
+   "_case": "expansion city disputed (Pune vs Nagpur) but a valid hiring trigger remains -> awaiting approval",
+   "identify": [
+    {
+     "score": 0.95,
+     "company": {
+      "name": "Malwa Textiles Ltd",
+      "domain": "malwatextiles.example",
+      "crustdata_id": "cd-2002",
+      "industry": "manufacturing",
+      "headcount": 800
+     }
+    }
+   ],
+   "locations": [
+    {
+     "city": "pune",
+     "kind": "warehouse",
+     "source": {
+      "url": "https://api.crustdata.example/company/cd-2002",
+      "kind": "api_response",
+      "excerpt": "locations[0] = {city: Pune, type: warehouse}",
+      "record_date": "2026-11-01",
+      "field_path": "locations[0]"
+     }
+    }
+   ],
+   "triggers": [
+    {
+     "type": "expansion",
+     "summary": "New warehouse in Pune",
+     "event_date": "2026-11-03",
+     "fact": {
+      "claim": "Malwa Textiles announced a new warehouse in Pune",
+      "sources": [
+       {
+        "url": "https://news.example/malwa-pune",
+        "kind": "web_page",
+        "excerpt": "Malwa Textiles will open a warehouse in Pune.",
+        "record_date": "2026-11-03"
+       }
+      ],
+      "value": "pune"
+     }
+    },
+    {
+     "type": "expansion",
+     "summary": "New warehouse in Nagpur",
+     "event_date": "2026-11-04",
+     "fact": {
+      "claim": "Malwa Textiles announced a new warehouse in Nagpur",
+      "sources": [
+       {
+        "url": "https://news.example/malwa-nagpur",
+        "kind": "web_page",
+        "excerpt": "Malwa Textiles will open a warehouse in Nagpur.",
+        "record_date": "2026-11-04"
+       }
+      ],
+      "value": "nagpur"
+     }
+    },
+    {
+     "type": "hiring",
+     "summary": "Logistics Manager job posted in Pune",
+     "event_date": "2026-11-15",
+     "fact": {
+      "claim": "Malwa Textiles posted a Logistics Manager job in Pune on 2026-11-15",
+      "sources": [
+       {
+        "url": "https://api.crustdata.example/jobs/cd-2002-2026-11-15",
+        "kind": "api_response",
+        "excerpt": "title = Logistics Manager; location = Pune; date_posted = 2026-11-15",
+        "record_date": "2026-11-15"
+       }
+      ]
+     }
+    }
+   ],
+   "people": [
+    {
+     "name": "Meera Kulkarni",
+     "title": "Head of Logistics",
+     "person_id": "p-22",
+     "employer_id": "cd-2002",
+     "employer_name": "Malwa Textiles Ltd",
+     "role_start": "2023-01-01",
+     "profile_url": "https://api.crustdata.example/person/p-22",
+     "business_email": "meera.kulkarni@malwatextiles.example"
+    }
+   ]
+  },
+  "Ratnagiri Foods": {
+   "_case": "funding reported twice with the SAME value -> one event, both sources kept",
+   "identify": [
+    {
+     "score": 0.95,
+     "company": {
+      "name": "Ratnagiri Foods Pvt Ltd",
+      "domain": "ratnagirifoods.example",
+      "crustdata_id": "cd-2003",
+      "industry": "fmcg",
+      "headcount": 800
+     }
+    }
+   ],
+   "locations": [
+    {
+     "city": "pune",
+     "kind": "plant",
+     "source": {
+      "url": "https://api.crustdata.example/company/cd-2003",
+      "kind": "api_response",
+      "excerpt": "locations[0] = {city: Pune, type: plant}",
+      "record_date": "2026-11-01",
+      "field_path": "locations[0]"
+     }
+    }
+   ],
+   "triggers": [
+    {
+     "type": "funding",
+     "summary": "Series A",
+     "event_date": "2026-11-08",
+     "fact": {
+      "claim": "Ratnagiri Foods raised a Series A of Rs 40 crore on 8 Nov 2026",
+      "sources": [
+       {
+        "url": "https://api.crustdata.example/company/cd-2003/funding",
+        "kind": "api_response",
+        "excerpt": "funding_rounds[0] = {type: Series A, amount_inr: 40 crore, date: 2026-11-08}",
+        "record_date": "2026-11-08"
+       }
+      ],
+      "value": "Series A, INR 40 crore"
+     }
+    },
+    {
+     "type": "funding",
+     "summary": "Series A",
+     "event_date": "2026-11-09",
+     "fact": {
+      "claim": "Ratnagiri Foods raised a Series A of Rs 40 crore",
+      "sources": [
+       {
+        "url": "https://news.example/ratnagiri-series-a",
+        "kind": "web_page",
+        "excerpt": "Ratnagiri Foods has raised Rs 40 crore in Series A funding.",
+        "record_date": "2026-11-09"
+       }
+      ],
+      "value": "Series A, INR 40 crore"
+     }
+    }
+   ],
+   "people": [
+    {
+     "name": "Farhan Qureshi",
+     "title": "VP Supply Chain",
+     "person_id": "p-23",
+     "employer_id": "cd-2003",
+     "employer_name": "Ratnagiri Foods Pvt Ltd",
+     "role_start": "2023-01-01",
+     "profile_url": "https://api.crustdata.example/person/p-23",
+     "business_email": "farhan.qureshi@ratnagirifoods.example"
+    }
+   ]
+  },
+  "Narmada Cement": {
+   "_case": "funding news 31 days before the request -> outside the 30-day window -> dropped",
+   "identify": [
+    {
+     "score": 0.95,
+     "company": {
+      "name": "Narmada Cement Ltd",
+      "domain": "narmadacement.example",
+      "crustdata_id": "cd-2004",
+      "industry": "manufacturing",
+      "headcount": 800
+     }
+    }
+   ],
+   "locations": [
+    {
+     "city": "pune",
+     "kind": "plant",
+     "source": {
+      "url": "https://api.crustdata.example/company/cd-2004",
+      "kind": "api_response",
+      "excerpt": "locations[0] = {city: Pune, type: plant}",
+      "record_date": "2026-11-01",
+      "field_path": "locations[0]"
+     }
+    }
+   ],
+   "triggers": [
+    {
+     "type": "funding",
+     "summary": "Debt raise",
+     "event_date": "2026-10-20",
+     "fact": {
+      "claim": "Narmada Cement raised debt on 20 Oct 2026",
+      "sources": [
+       {
+        "url": "https://api.crustdata.example/company/cd-2004/funding",
+        "kind": "api_response",
+        "excerpt": "funding_rounds[0] = {type: Debt, date: 2026-10-20}",
+        "record_date": "2026-10-20"
+       }
+      ],
+      "value": "Debt"
+     }
+    }
+   ],
+   "people": [
+    {
+     "name": "Ila Shah",
+     "title": "Head of Operations",
+     "person_id": "p-24",
+     "employer_id": "cd-2004",
+     "employer_name": "Narmada Cement Ltd",
+     "role_start": "2023-01-01",
+     "profile_url": "https://api.crustdata.example/person/p-24",
+     "business_email": "ila.shah@narmadacement.example"
+    }
+   ]
+  },
+  "Tapti Plastics": {
+   "_case": "hiring post exactly 30 days before the request -> inside the window (boundary)",
+   "identify": [
+    {
+     "score": 0.95,
+     "company": {
+      "name": "Tapti Plastics Ltd",
+      "domain": "taptiplastics.example",
+      "crustdata_id": "cd-2005",
+      "industry": "manufacturing",
+      "headcount": 800
+     }
+    }
+   ],
+   "locations": [
+    {
+     "city": "pune",
+     "kind": "plant",
+     "source": {
+      "url": "https://api.crustdata.example/company/cd-2005",
+      "kind": "api_response",
+      "excerpt": "locations[0] = {city: Pune, type: plant}",
+      "record_date": "2026-11-01",
+      "field_path": "locations[0]"
+     }
+    }
+   ],
+   "triggers": [
+    {
+     "type": "hiring",
+     "summary": "Logistics Manager job posted in Pune",
+     "event_date": "2026-10-21",
+     "fact": {
+      "claim": "Tapti Plastics posted a Logistics Manager job in Pune on 2026-10-21",
+      "sources": [
+       {
+        "url": "https://api.crustdata.example/jobs/cd-2005-2026-10-21",
+        "kind": "api_response",
+        "excerpt": "title = Logistics Manager; location = Pune; date_posted = 2026-10-21",
+        "record_date": "2026-10-21"
+       }
+      ]
+     }
+    }
+   ],
+   "people": [
+    {
+     "name": "Kavya Iyer",
+     "title": "Logistics Manager",
+     "person_id": "p-25",
+     "employer_id": "cd-2005",
+     "employer_name": "Tapti Plastics Ltd",
+     "role_start": "2023-01-01",
+     "profile_url": "https://api.crustdata.example/person/p-25",
+     "business_email": "kavya.iyer@taptiplastics.example"
+    }
+   ]
+  },
+  "Krishna Auto Parts": {
+   "_case": "trigger dated AFTER the request date (bad data) -> rejected -> dropped",
+   "identify": [
+    {
+     "score": 0.95,
+     "company": {
+      "name": "Krishna Auto Parts Ltd",
+      "domain": "krishnaauto.example",
+      "crustdata_id": "cd-2006",
+      "industry": "automotive",
+      "headcount": 800
+     }
+    }
+   ],
+   "locations": [
+    {
+     "city": "pune",
+     "kind": "plant",
+     "source": {
+      "url": "https://api.crustdata.example/company/cd-2006",
+      "kind": "api_response",
+      "excerpt": "locations[0] = {city: Pune, type: plant}",
+      "record_date": "2026-11-01",
+      "field_path": "locations[0]"
+     }
+    }
+   ],
+   "triggers": [
+    {
+     "type": "hiring",
+     "summary": "Logistics Manager job posted in Pune",
+     "event_date": "2026-11-25",
+     "fact": {
+      "claim": "Krishna Auto Parts posted a Logistics Manager job in Pune on 2026-11-25",
+      "sources": [
+       {
+        "url": "https://api.crustdata.example/jobs/cd-2006-2026-11-25",
+        "kind": "api_response",
+        "excerpt": "title = Logistics Manager; location = Pune; date_posted = 2026-11-25",
+        "record_date": "2026-11-25"
+       }
+      ]
+     }
+    }
+   ],
+   "people": [
+    {
+     "name": "Om Prakash",
+     "title": "Head of Supply Chain",
+     "person_id": "p-26",
+     "employer_id": "cd-2006",
+     "employer_name": "Krishna Auto Parts Ltd",
+     "role_start": "2023-01-01",
+     "profile_url": "https://api.crustdata.example/person/p-26",
+     "business_email": "om.prakash@krishnaauto.example"
+    }
+   ]
+  },
+  "Mahalaxmi Textiles": {
+   "_case": "already a client of the 3PL -> excluded",
+   "identify": [
+    {
+     "score": 0.95,
+     "company": {
+      "name": "Mahalaxmi Textiles",
+      "domain": "mahalaxmitextiles.example",
+      "crustdata_id": "cd-2007",
+      "industry": "manufacturing",
+      "headcount": 800
+     }
+    }
+   ],
+   "locations": [
+    {
+     "city": "pune",
+     "kind": "warehouse",
+     "source": {
+      "url": "https://api.crustdata.example/company/cd-2007",
+      "kind": "api_response",
+      "excerpt": "locations[0] = {city: Pune, type: warehouse}",
+      "record_date": "2026-11-01",
+      "field_path": "locations[0]"
+     }
+    }
+   ],
+   "triggers": [
+    {
+     "type": "hiring",
+     "summary": "Logistics Manager job posted in Pune",
+     "event_date": "2026-11-11",
+     "fact": {
+      "claim": "Mahalaxmi Textiles posted a Logistics Manager job in Pune on 2026-11-11",
+      "sources": [
+       {
+        "url": "https://api.crustdata.example/jobs/cd-2007-2026-11-11",
+        "kind": "api_response",
+        "excerpt": "title = Logistics Manager; location = Pune; date_posted = 2026-11-11",
+        "record_date": "2026-11-11"
+       }
+      ]
+     }
+    }
+   ],
+   "people": [
+    {
+     "name": "Gita Rane",
+     "title": "Head of Logistics",
+     "person_id": "p-27",
+     "employer_id": "cd-2007",
+     "employer_name": "Mahalaxmi Textiles",
+     "role_start": "2023-01-01",
+     "profile_url": "https://api.crustdata.example/person/p-27",
+     "business_email": "gita.rane@mahalaxmitextiles.example"
+    }
+   ]
+  },
+  "Rival Freight Lines": {
+   "_case": "a rival 3PL -> excluded",
+   "identify": [
+    {
+     "score": 0.95,
+     "company": {
+      "name": "Rival Freight Lines",
+      "domain": "rivalfreight.example",
+      "crustdata_id": "cd-2008",
+      "industry": "logistics",
+      "headcount": 800
+     }
+    }
+   ],
+   "locations": [
+    {
+     "city": "pune",
+     "kind": "office",
+     "source": {
+      "url": "https://api.crustdata.example/company/cd-2008",
+      "kind": "api_response",
+      "excerpt": "locations[0] = {city: Pune, type: office}",
+      "record_date": "2026-11-01",
+      "field_path": "locations[0]"
+     }
+    }
+   ],
+   "triggers": [
+    {
+     "type": "hiring",
+     "summary": "Logistics Manager job posted in Pune",
+     "event_date": "2026-11-09",
+     "fact": {
+      "claim": "Rival Freight Lines posted a Logistics Manager job in Pune on 2026-11-09",
+      "sources": [
+       {
+        "url": "https://api.crustdata.example/jobs/cd-2008-2026-11-09",
+        "kind": "api_response",
+        "excerpt": "title = Logistics Manager; location = Pune; date_posted = 2026-11-09",
+        "record_date": "2026-11-09"
+       }
+      ]
+     }
+    }
+   ],
+   "people": [
+    {
+     "name": "Dev Malhotra",
+     "title": "COO",
+     "person_id": "p-28",
+     "employer_id": "cd-2008",
+     "employer_name": "Rival Freight Lines",
+     "role_start": "2023-01-01",
+     "profile_url": "https://api.crustdata.example/person/p-28",
+     "business_email": "dev@rivalfreight.example"
+    }
+   ]
+  },
+  "Bhima Sugar": {
+   "_case": "best identify score below identity.min_score -> cannot verify which company",
+   "identify": [
+    {
+     "score": 0.5,
+     "company": {
+      "name": "Bhima Sugar Mills Cooperative",
+      "domain": "bhimasugarmills.example",
+      "crustdata_id": "cd-2009",
+      "industry": "manufacturing",
+      "headcount": 800
+     }
+    }
+   ]
+  },
+  "Tungabhadra Paper": {
+   "_case": "only match has a different domain from the one we were given -> hold lookalike",
+   "identify": [
+    {
+     "score": 0.95,
+     "company": {
+      "name": "Tungabhadra Paper Mills Ltd",
+      "domain": "tungabhadra-paper-mills.example",
+      "crustdata_id": "cd-2010",
+      "industry": "manufacturing",
+      "headcount": 800
+     }
+    }
+   ]
+  },
+  "Wardha Dairy": {
+   "_case": "only the HQ is on the route -> partial fit (score 0.4) -> still contacted, reason says partial",
+   "identify": [
+    {
+     "score": 0.95,
+     "company": {
+      "name": "Wardha Dairy Pvt Ltd",
+      "domain": "wardhadairy.example",
+      "crustdata_id": "cd-2011",
+      "industry": "fmcg",
+      "headcount": 800
+     }
+    }
+   ],
+   "locations": [
+    {
+     "city": "pune",
+     "kind": "hq",
+     "source": {
+      "url": "https://api.crustdata.example/company/cd-2011",
+      "kind": "api_response",
+      "excerpt": "locations[0] = {city: Pune, type: hq}",
+      "record_date": "2026-11-01",
+      "field_path": "locations[0]"
+     }
+    }
+   ],
+   "triggers": [
+    {
+     "type": "hiring",
+     "summary": "Logistics Manager job posted in Pune",
+     "event_date": "2026-11-16",
+     "fact": {
+      "claim": "Wardha Dairy posted a Logistics Manager job in Pune on 2026-11-16",
+      "sources": [
+       {
+        "url": "https://api.crustdata.example/jobs/cd-2011-2026-11-16",
+        "kind": "api_response",
+        "excerpt": "title = Logistics Manager; location = Pune; date_posted = 2026-11-16",
+        "record_date": "2026-11-16"
+       }
+      ]
+     }
+    }
+   ],
+   "people": [
+    {
+     "name": "Rohit Deshpande",
+     "title": "Director Operations",
+     "person_id": "p-29",
+     "employer_id": "cd-2011",
+     "employer_name": "Wardha Dairy Pvt Ltd",
+     "role_start": "2023-01-01",
+     "profile_url": "https://api.crustdata.example/person/p-29",
+     "business_email": "rohit.deshpande@wardhadairy.example"
+    }
+   ]
+  },
+  "Kolhapur Castings": {
+   "_case": "only plant is in Nagpur, not on any route with spare capacity -> dropped",
+   "identify": [
+    {
+     "score": 0.95,
+     "company": {
+      "name": "Kolhapur Castings Ltd",
+      "domain": "kolhapurcastings.example",
+      "crustdata_id": "cd-2012",
+      "industry": "manufacturing",
+      "headcount": 800
+     }
+    }
+   ],
+   "locations": [
+    {
+     "city": "nagpur",
+     "kind": "plant",
+     "source": {
+      "url": "https://api.crustdata.example/company/cd-2012",
+      "kind": "api_response",
+      "excerpt": "locations[0] = {city: Nagpur, type: plant}",
+      "record_date": "2026-11-01",
+      "field_path": "locations[0]"
+     }
+    }
+   ],
+   "triggers": [
+    {
+     "type": "hiring",
+     "summary": "Logistics Manager job posted in Nagpur",
+     "event_date": "2026-11-14",
+     "fact": {
+      "claim": "Kolhapur Castings posted a Logistics Manager job in Nagpur on 2026-11-14",
+      "sources": [
+       {
+        "url": "https://api.crustdata.example/jobs/cd-2012-2026-11-14",
+        "kind": "api_response",
+        "excerpt": "title = Logistics Manager; location = Nagpur; date_posted = 2026-11-14",
+        "record_date": "2026-11-14"
+       }
+      ]
+     }
+    }
+   ],
+   "people": [
+    {
+     "name": "Sneha Jadhav",
+     "title": "Head of Supply Chain",
+     "person_id": "p-30",
+     "employer_id": "cd-2012",
+     "employer_name": "Kolhapur Castings Ltd",
+     "role_start": "2023-01-01",
+     "profile_url": "https://api.crustdata.example/person/p-30",
+     "business_email": "sneha.jadhav@kolhapurcastings.example"
+    }
+   ]
+  },
+  "Solapur Ceramics": {
+   "_case": "first buyer has no business email (never use personal) -> next verified buyer",
+   "identify": [
+    {
+     "score": 0.95,
+     "company": {
+      "name": "Solapur Ceramics Ltd",
+      "domain": "solapurceramics.example",
+      "crustdata_id": "cd-2013",
+      "industry": "manufacturing",
+      "headcount": 800
+     }
+    }
+   ],
+   "locations": [
+    {
+     "city": "pune",
+     "kind": "warehouse",
+     "source": {
+      "url": "https://api.crustdata.example/company/cd-2013",
+      "kind": "api_response",
+      "excerpt": "locations[0] = {city: Pune, type: warehouse}",
+      "record_date": "2026-11-01",
+      "field_path": "locations[0]"
+     }
+    }
+   ],
+   "triggers": [
+    {
+     "type": "hiring",
+     "summary": "Logistics Manager job posted in Pune",
+     "event_date": "2026-11-17",
+     "fact": {
+      "claim": "Solapur Ceramics posted a Logistics Manager job in Pune on 2026-11-17",
+      "sources": [
+       {
+        "url": "https://api.crustdata.example/jobs/cd-2013-2026-11-17",
+        "kind": "api_response",
+        "excerpt": "title = Logistics Manager; location = Pune; date_posted = 2026-11-17",
+        "record_date": "2026-11-17"
+       }
+      ]
+     }
+    }
+   ],
+   "people": [
+    {
+     "name": "Ajay Pawar",
+     "title": "Head of Supply Chain",
+     "person_id": "p-31",
+     "employer_id": "cd-2013",
+     "employer_name": "Solapur Ceramics Ltd",
+     "role_start": "2023-01-01",
+     "profile_url": "https://api.crustdata.example/person/p-31"
+    },
+    {
+     "name": "Neha Patil",
+     "title": "Logistics Manager",
+     "person_id": "p-32",
+     "employer_id": "cd-2013",
+     "employer_name": "Solapur Ceramics Ltd",
+     "role_start": "2023-01-01",
+     "profile_url": "https://api.crustdata.example/person/p-32",
+     "business_email": "neha.patil@solapurceramics.example"
+    }
+   ]
+  }
+ },
+ "employment_updates": {}
+}

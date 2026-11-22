@@ -19,6 +19,7 @@ triggers:
   dedupe_days: 3            # same company + type within N days = same event
   weights: {hiring: 1.0, expansion: 1.5, funding: 1.2}
   ignore_types: [layoffs, downsizing]
+  conflict_types: [funding, expansion]   # one event, one true value: differing sources -> cannot verify
 
 identity:
   lookalike_gap: 0.10       # top-2 identify scores closer than this -> hold as lookalike

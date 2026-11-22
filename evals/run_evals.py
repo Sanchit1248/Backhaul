@@ -42,7 +42,9 @@ def verdict(got, exp: dict) -> str:
 
 def main(filter_: str = "") -> int:
     totals: dict[str, int] = {}
-    for path in sorted((ROOT / "evals" / "cases").glob(f"*{filter_}*.json")):
+    # glob("**.json") is invalid on Python < 3.13, so filter by name instead
+    cases = [p for p in sorted((ROOT / "evals" / "cases").glob("*.json")) if filter_ in p.name]
+    for path in cases:
         case = json.loads(path.read_text(encoding="utf-8"))
         cfg = settings()
         saved = dict(cfg["sources"])
