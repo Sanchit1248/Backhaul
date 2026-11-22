@@ -1,4 +1,4 @@
-# Architecture
+# Backhaul: architecture
 
 One Python service takes a request through **ten steps**. Steps 2–8 checkpoint their output in a
 SQLite ledger before the next step starts; steps 9–10 run every time and are idempotent through

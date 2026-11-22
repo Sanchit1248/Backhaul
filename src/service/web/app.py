@@ -40,6 +40,18 @@ EXAMPLES = [
     "Find buyers on the Pune-Mumbai lane, we have 10 free trucks",
 ]
 
+STEP_HELP = {
+    "01_intake": "Reads your request and the client's records",
+    "02_discover": "Finds companies hiring for logistics in your lane's cities",
+    "03_identity": "Confirms each company's identity; holds lookalikes",
+    "04_triggers": "Checks for a dated hiring, expansion or funding event in the window",
+    "05_route_fit": "Checks for a site on your lane",
+    "06_exclude": "Removes clients, rivals, do-not-contact and recently contacted",
+    "07_buyer": "Finds the right buyer and rechecks their role and email",
+    "08_draft": "Writes the email from sourced facts only",
+    "09_approve": "Waits for a person to approve each email",
+    "10_send": "Sends each approved email and invite exactly once",
+}
 STEPS = [("01_intake", "Read request"), ("02_discover", "Find hiring companies"),
          ("03_identity", "Confirm identity"), ("04_triggers", "Check fresh triggers"),
          ("05_route_fit", "Match to your lane"), ("06_exclude", "Exclusions"),
@@ -125,15 +137,25 @@ def create_app(ledger: Ledger | None = None, password: str | None = None,
         note = ("" if pw else "<p class=err>APPROVER_PASSWORD is not set in .env: "
                 "login is disabled.</p>")
         err = f"<p class=err>{escape(error)}</p>" if error else ""
-        return layout("Welcome back", f"""<div class=narrow>{note}{err}
+        return layout("Sign in", f"""{ROUTES}<div class=auth>
 <form method=post action=/login class=card>
-  <p class=muted>Sign in to run jobs and approve emails. Your name is recorded on every
-    decision you make.</p>
-  <label>Your name
-    <input name=name required maxlength=80 autocomplete=name></label>
-  <label>Password<input name=password type=password required></label>
-  <button class="btn primary lg">Log in</button>
-</form></div>""", client=client_name())
+  <div class=auth-brand><span class=logo>{LOGO}</span>
+    <h2>Back<span style="color:var(--cta2)">haul</span></h2>
+    <p class=muted>{TAGLINE}: meetings with shippers near your spare lanes.</p></div>
+  {note}{err}
+  <label for=name>Your name <span class=muted>(recorded on every decision)</span>
+    <input id=name name=name required maxlength=80 autocomplete=name autofocus></label>
+  <label for=password>Password
+    <span class=pw><input id=password name=password type=password required
+      autocomplete=current-password><button type=button class=pw-toggle aria-label="Show password"
+      aria-pressed=false><span class=eye>{ICONS['eye']}</span><span class=eye-off>{ICONS['eyeoff']}</span>
+      </button></span></label>
+  <button class="btn primary lg">Sign in</button>
+  <p class="muted auth-foot">Every email waits for a person's approval before it is sent.</p>
+</form>
+<div class=auth-foot><button type=button id=theme class=iconbtn title='Light / dark'
+  aria-label='Toggle theme' style="margin:auto"><span class=moon>{ICONS['moon']}</span>
+  <span class=sun>{ICONS['sun']}</span></button></div></div>""", client=client_name(), bare=True)
 
     @app.post("/login")
     def login(name: str = Form(...), password: str = Form(...)) -> Response:
@@ -179,8 +201,8 @@ def create_app(ledger: Ledger | None = None, password: str | None = None,
       placeholder="{escape(EXAMPLES[0])}"></textarea>
     <div id=preview class=preview aria-live=polite></div>
     <div class=chips><span class=muted>Try:</span>{chips}</div>
-    <div class=row><button class="btn primary lg">{ICONS['spark']}<span>Check what I understood</span>
-      {ICONS['arrow']}</button><span class=muted><kbd>Ctrl</kbd> + <kbd>Enter</kbd></span></div>
+    <div class=row><button class="btn cta lg">{ICONS['spark']}<span>Check what I understood</span>
+      {ICONS['arrow']}</button><span class=muted><kbd>Ctrl</kbd> + <kbd>Enter</kbd> &middot; <kbd>/</kbd> to focus</span></div>
   </form>
 </section>
 {"<h2>Recent jobs</h2><div class=jobgrid>" + recent_html + "</div>" if recent else ""}""",
@@ -259,7 +281,7 @@ on the job page to send it (the job's send step sends each email + invite exactl
     <span><b>Rehearsal</b>: use test data (no Crustdata credits, finishes in seconds)</span></label>
   <p class=muted>A live job takes about 5-10 minutes (the data provider allows 5 requests a
     minute). You can leave the page; progress is saved.</p>
-  <div class=row><button class="btn primary lg">{ICONS['play']}<span>Run the job</span></button>
+  <div class=row><button class="btn cta lg">{ICONS['play']}<span>Run the job</span></button>
     <a class="btn ghost" href="/">Cancel</a></div>
 </form>""", tab="new"))
 
@@ -682,13 +704,34 @@ def render_tracker(events: list, status: str, res: dict | None, n_sent: int) -> 
             note = (note + " &middot; " if note else "") + "resumed after restart"
         if key == "09_approve" and state == "wait":
             note = "waiting for you"
-        items.append(f"<li class='{state}'><span class=dot></span><span class=lbl>"
+        items.append(f"<li class='{state}' title='{escape(STEP_HELP.get(key, ''))}'>"
+                     f"<span class=dot></span><span class=lbl>"
                      f"{escape(label)}</span><span class=note>{note}</span></li>")
-    return f"<ol class=tracker>{''.join(items)}</ol>"
+    n_done = sum(1 for i in items if "class='done'" in i or "class='wait'" in i)
+    head = (f"<div class=row style='justify-content:space-between;margin-top:6px'>"
+            f"<h3 style='margin:0'>Progress</h3><span class=stepcount>Step {min(n_done + 1, 10)} of 10"
+            f"</span></div>" if status == "running" else "")
+    return f"{head}<ol class=tracker>{''.join(items)}</ol>"
 
 
 _SVG = ('<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" '
         'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{}</svg>')
+
+LOGO = """<svg viewBox="0 0 48 48" width="36" height="36" aria-hidden="true">
+<defs><linearGradient id="bhg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2563eb"/>
+<stop offset="1" stop-color="#1e40af"/></linearGradient></defs>
+<rect x="2" y="2" width="44" height="44" rx="12" fill="url(#bhg)"/>
+<path d="M12 18h17a7 7 0 0 1 0 14H17" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/>
+<path d="M20 27l-4.5 5 4.5 5" fill="none" stroke="#fb923c" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="9" y="13" width="9" height="7" rx="1.6" fill="#fff"/><circle cx="11.5" cy="21.5" r="1.6" fill="#fb923c"/>
+<circle cx="16" cy="21.5" r="1.6" fill="#fb923c"/></svg>"""
+ROUTES = """<svg class=routes viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+<path d="M-50 650 C 250 520, 420 700, 640 560 S 980 380, 1260 470"/>
+<path d="M-50 260 C 220 160, 470 330, 700 220 S 1050 80, 1260 150"/>
+<path d="M120 860 C 260 640, 520 620, 760 700 S 1100 760, 1260 640"/></svg>"""
+FAVICON = ("data:image/svg+xml," + quote(LOGO.replace('width="36" height="36" ', '')))
+TAGLINE = "Fill every empty mile"
+
 ICONS = {k: _SVG.format(v) for k, v in {
     "check": '<path d="M20 6 9 17l-5-5"/>',
     "x": '<path d="M18 6 6 18M6 6l12 12"/>',
@@ -704,6 +747,10 @@ ICONS = {k: _SVG.format(v) for k, v in {
     "plus": '<path d="M12 5v14M5 12h14"/>',
     "list": '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
     "inbox": '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6Z"/>',
+    "eye": '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+    "eyeoff": '<path d="M3 3l18 18"/><path d="M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.2M6.6 6.6A17 17 0 0 0 2 12s3.5 7 10 7a9.8 9.8 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
+    "search": '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+    "copy": '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
 }.items()}
 
 
@@ -826,6 +873,9 @@ def render_result(res: dict) -> str:
     return f"""<section class=card id=result>
 <div class=row><h2>Result</h2>{badge(res.get('status', ''))}
   <span class=muted>₹{res.get('cost_inr', 0):,.2f}</span></div>
+<div class=rtools><label class=search aria-label="Search companies">{ICONS['search']}
+  <input type=search id=psearch placeholder="Search companies, reasons, buyers..." autocomplete=off></label>
+  <span class=muted id=pcount></span></div>
 <div class=tiles>{tiles}<button type=button class='tile all' data-filter=''>
   <b>{len(ps)}</b><span>All</span></button></div>
 <div class=plist>{''.join(rows) or '<p class=muted>No companies found.</p>'}</div>
@@ -909,7 +959,8 @@ def render_action(a: dict, run_cost_inr: float, csrf: str, next_: str = "/approv
   <div class=review>
     <div class=email>
       <p><b>To:</b> {escape(d.get('to', ''))}<br><b>Subject:</b> {escape(d.get('subject', ''))}</p>
-      <pre class=mail>{body}</pre>
+      <div class=mailwrap><pre class=mail id="m-{k}">{body}</pre><button type=button
+        class="btn ghost copy" data-copy="m-{k}" aria-label="Copy email text">{ICONS['copy']}<span>Copy</span></button></div>
       <p class=muted>Calendar invite attached: {'yes' if d.get('ics') else 'no'}</p>
     </div>
     <div class=evidence>
@@ -931,18 +982,20 @@ def render_action(a: dict, run_cost_inr: float, csrf: str, next_: str = "/approv
 
 
 CSS = r"""
-:root{--bg:#f6f7fb;--bg2:#eef1f7;--fg:#111827;--muted:#6b7280;--card:#ffffff;--line:#e5e7ef;
---soft:#f3f5fa;--accent:#4f46e5;--accent2:#7c3aed;--accent-bg:#eef0ff;--ring:rgba(79,70,229,.28);
---good:#0f8a4f;--good-bg:#e7f7ee;--warn:#b26b00;--warn-bg:#fff4e0;--bad:#c62828;--bad-bg:#fdecec;
---info:#2563eb;--info-bg:#e8f0ff;--shadow:0 1px 2px rgba(17,24,39,.05),0 4px 16px rgba(17,24,39,.06);
---shadow-lg:0 10px 30px rgba(17,24,39,.12);--radius:14px;--ease:cubic-bezier(.2,.8,.2,1)}
-[data-theme=dark]{--bg:#0d1017;--bg2:#121621;--fg:#e8eaf0;--muted:#9aa3b2;--card:#161a24;--line:#262c3a;
---soft:#1c2130;--accent:#8b85ff;--accent2:#b18cff;--accent-bg:#232447;--ring:rgba(139,133,255,.35);
---good:#4ade80;--good-bg:#12301f;--warn:#fbbf24;--warn-bg:#33270b;--bad:#f87171;--bad-bg:#3a1717;
---info:#7aa7ff;--info-bg:#17233d;--shadow:0 1px 2px rgba(0,0,0,.3);--shadow-lg:0 12px 32px rgba(0,0,0,.45)}
+:root{--bg:#f8fafc;--bg2:#eef2f7;--fg:#1e293b;--muted:#475569;--card:#ffffff;--line:#e2e8f0;
+--soft:#f1f5f9;--accent:#2563eb;--accent2:#3b82f6;--accent-bg:#e9effb;--ring:rgba(37,99,235,.30);
+--cta:#c2410c;--cta2:#ea580c;--cta-ring:rgba(234,88,12,.28);
+--good:#15803d;--good-bg:#e7f6ec;--warn:#b45309;--warn-bg:#fef3e2;--bad:#dc2626;--bad-bg:#fdecec;
+--info:#2563eb;--info-bg:#e9effb;--shadow:0 1px 2px rgba(15,23,42,.05),0 4px 16px rgba(15,23,42,.06);
+--shadow-lg:0 12px 32px rgba(15,23,42,.14);--radius:14px;--ease:cubic-bezier(.2,.8,.2,1)}
+[data-theme=dark]{--bg:#0b1220;--bg2:#0f172a;--fg:#e2e8f0;--muted:#94a3b8;--card:#111a2e;--line:#22304a;
+--soft:#16213a;--accent:#60a5fa;--accent2:#93c5fd;--accent-bg:#162a4a;--ring:rgba(96,165,250,.35);
+--cta:#ea580c;--cta2:#f97316;--cta-ring:rgba(249,115,22,.35);
+--good:#4ade80;--good-bg:#11301f;--warn:#fbbf24;--warn-bg:#33270b;--bad:#f87171;--bad-bg:#3a1717;
+--info:#60a5fa;--info-bg:#162a4a;--shadow:0 1px 2px rgba(0,0,0,.35);--shadow-lg:0 14px 34px rgba(0,0,0,.5)}
 *{box-sizing:border-box}html{scroll-behavior:smooth;color-scheme:light}[data-theme=dark]{color-scheme:dark}
 body{margin:0;background:radial-gradient(1200px 500px at 10% -10%,var(--accent-bg),transparent 60%),var(--bg);
-color:var(--fg);font:15px/1.6 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+color:var(--fg);font:15px/1.6 "Plus Jakarta Sans",Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
 transition:background-color .3s var(--ease),color .3s var(--ease);min-height:100vh}
 ::selection{background:var(--accent-bg)}
 /* header */
@@ -951,8 +1004,7 @@ backdrop-filter:saturate(1.6) blur(12px);border-bottom:1px solid var(--line)}
 .topin{max-width:1200px;margin:auto;display:flex;align-items:center;gap:22px;padding:10px 22px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;white-space:nowrap;
 color:var(--fg);text-decoration:none}.brand small{display:block;font-weight:500;color:var(--muted);font-size:12px}
-.logo{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;color:#fff;
-background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 12px var(--ring)}
+.logo{width:36px;height:36px;display:grid;place-items:center;filter:drop-shadow(0 4px 10px var(--ring));transition:transform .4s var(--ease)}.brand:hover .logo{transform:rotate(-8deg) scale(1.06)}
 nav{display:flex;gap:4px;flex:1;position:relative}
 nav a{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:10px;color:var(--muted);
 text-decoration:none;font-weight:600;transition:background .2s var(--ease),color .2s var(--ease)}
@@ -1114,7 +1166,7 @@ details.prospect>summary:after{content:"";width:8px;height:8px;border-right:2px 
 transform:rotate(45deg);transition:transform .25s var(--ease);justify-self:end}
 details.prospect[open]>summary:after{transform:rotate(225deg)}
 details.prospect[open]>summary{border-bottom:1px solid var(--line);background:var(--soft)}
-.co .muted{display:block}.pdetail{padding:6px 20px 16px}.hidden{display:none!important}
+.co .muted{display:block}.pdetail{padding:6px 20px 16px}.hidden,.nomatch{display:none!important}
 ul.claims{list-style:none;padding:0;margin:0}li.claim{margin:8px 0;padding:8px 10px;border-radius:10px;transition:background .3s var(--ease)}
 li.claim.hl{background:var(--warn-bg);box-shadow:inset 3px 0 0 var(--warn)}.num{font-weight:800;color:var(--accent)}
 ul.src{list-style:none;padding-left:10px;font-size:13px;margin:4px 0}
@@ -1151,6 +1203,43 @@ dialog.modal{border:0;border-radius:16px;padding:0;max-width:440px;width:calc(10
 box-shadow:var(--shadow-lg)}dialog.modal::backdrop{background:rgba(10,12,20,.45);backdrop-filter:blur(3px)}
 dialog.modal[open]{animation:pop .3s var(--ease)}.modal-body{padding:22px 24px 8px;font-size:15px}
 .modal-actions{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px 18px}
+
+/* Backhaul additions (UI/UX Pro Max: trust blue + orange CTA, 44px targets, visible focus) */
+.btn,button.btn{min-height:42px}.btn.lg{min-height:48px}
+.btn.primary{background:linear-gradient(135deg,#2563eb,#1d4ed8);box-shadow:0 4px 14px rgba(37,99,235,.32)}
+.btn.cta{color:#fff;border:0;background:linear-gradient(135deg,var(--cta),var(--cta2));box-shadow:0 4px 14px var(--cta-ring)}
+.btn.cta:hover{filter:brightness(1.06);box-shadow:0 8px 22px var(--cta-ring)}
+.brandname{font-weight:800;letter-spacing:-.02em;font-size:18px}
+.brandname b{color:var(--cta2)}
+/* centered login */
+body.bare main{max-width:none;padding:0;display:grid;min-height:100vh;place-items:center}
+body.bare main>h1{display:none}
+.auth{width:min(440px,calc(100% - 32px));margin:40px auto;position:relative;z-index:1}
+.auth .card{padding:32px 32px 28px;background:color-mix(in srgb,var(--card) 86%,transparent);
+backdrop-filter:blur(16px) saturate(1.4);border:1px solid color-mix(in srgb,var(--line) 70%,transparent);box-shadow:var(--shadow-lg)}
+.auth-brand{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;margin-bottom:22px}
+.auth-brand .logo{width:64px;height:64px}.auth-brand .logo svg{width:64px;height:64px}
+.auth-brand h2{font-size:26px;letter-spacing:-.03em}.auth-brand p{margin:0}
+.pw{position:relative}.pw input{padding-right:48px}
+.pw-toggle{position:absolute;right:4px;bottom:4px;width:40px;height:40px;border:0;background:none;color:var(--muted);
+border-radius:8px;cursor:pointer;display:grid;place-items:center;transition:background .2s,color .2s}
+.pw-toggle:hover{background:var(--soft);color:var(--fg)}.pw-toggle:focus-visible{outline:0;box-shadow:0 0 0 3px var(--ring)}
+.pw-toggle .eye-off{display:none}.pw-toggle[aria-pressed=true] .eye{display:none}.pw-toggle[aria-pressed=true] .eye-off{display:block}
+.auth .btn{width:100%;margin-top:6px}.auth-foot{text-align:center;margin-top:16px}
+.routes{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.55}
+.routes path{fill:none;stroke:var(--accent);stroke-width:1.5;stroke-dasharray:6 10;opacity:.35}
+@media (prefers-reduced-motion:no-preference){.routes path{animation:dash 24s linear infinite}}
+@keyframes dash{to{stroke-dashoffset:-320}}
+/* results search + copy */
+.rtools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.search{position:relative;flex:1;min-width:220px;max-width:380px}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted)}
+.search input{padding-left:38px;margin:0}
+.copy{position:absolute;top:8px;right:8px;min-height:32px;padding:4px 10px;font-size:12px}
+.mailwrap{position:relative}
+.stepcount{font-size:12px;font-weight:700;color:var(--accent);background:var(--accent-bg);border-radius:999px;padding:3px 10px}
+.hint{display:inline-flex;gap:6px;align-items:center}
+summary,.tile,.chip,nav a,.brand,label.check,tr.link-row{cursor:pointer}
 @media (max-width:860px){.review{grid-template-columns:1fr}.evidence{border:0;padding:0;max-height:none}
 .stats{grid-template-columns:1fr 1fr}.tracker{grid-template-columns:repeat(5,1fr);row-gap:18px}
 details.prospect>summary{grid-template-columns:1fr auto 18px}.why{grid-column:1/-1}.topin{flex-wrap:wrap}}
@@ -1259,13 +1348,45 @@ JS = r"""
       scrollTo(0, y); countUp(next); initToasts(next); live();
     }).catch(() => live()), 2500);
   };
+  // password show / hide
+  $$('.pw-toggle').forEach(b => b.addEventListener('click', () => {
+    const i = b.parentElement.querySelector('input'), on = i.type === 'password';
+    i.type = on ? 'text' : 'password'; b.setAttribute('aria-pressed', on);
+    b.setAttribute('aria-label', on ? 'Hide password' : 'Show password'); i.focus();
+  }));
+  // search companies in the result (works with the tile filter)
+  document.addEventListener('input', e => {
+    if (e.target.id !== 'psearch') return;
+    const q = e.target.value.trim().toLowerCase(); let n = 0;
+    $$('details.prospect').forEach(d => { const hit = !q || d.textContent.toLowerCase().includes(q);
+      d.classList.toggle('nomatch', !hit); if (hit && !d.classList.contains('hidden')) n++; });
+    const c = $('#pcount'); if (c) c.textContent = q ? n + ' match' + (n === 1 ? '' : 'es') : '';
+  });
+  // copy email text
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-copy]'); if (!b) return;
+    const t = document.getElementById(b.dataset.copy)?.innerText || '';
+    navigator.clipboard?.writeText(t).then(() => { const s = b.querySelector('span'); const o = s.textContent;
+      s.textContent = 'Copied'; b.classList.add('done'); setTimeout(() => { s.textContent = o; b.classList.remove('done'); }, 1400); });
+  });
+  // keyboard: "/" focuses the request box, j / k move between drafts
+  document.addEventListener('keydown', e => {
+    if (e.target.closest('input, textarea, [contenteditable]') || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === '/' && prompt) { e.preventDefault(); prompt.focus(); }
+    if (e.key === 'j' || e.key === 'k') {
+      const cards = $$('section.draft'); if (!cards.length) return;
+      const y = scrollY + 90; let i = cards.findIndex(c => c.offsetTop > y);
+      i = e.key === 'j' ? (i === -1 ? cards.length - 1 : i) : Math.max(0, (i === -1 ? cards.length : i) - 2);
+      cards[i].scrollIntoView({behavior: 'smooth', block: 'start'});
+    }
+  });
   initToasts(); countUp(); live();
 })();
 """
 
 
 def layout(title: str, body: str, name: str = "", tab: str = "", pending: int = 0,
-           client: str = "", head: str = "") -> str:
+           client: str = "", head: str = "", bare: bool = False) -> str:
     nav = ""
     if name:
         def item(key: str, href: str, icon: str, label: str) -> str:
@@ -1279,13 +1400,16 @@ def layout(title: str, body: str, name: str = "", tab: str = "", pending: int = 
         nav = "<nav></nav><div class=user>"
     theme = (f"<button type=button id=theme class=iconbtn title='Light / dark' aria-label='Toggle theme'>"
              f"<span class=moon>{ICONS['moon']}</span><span class=sun>{ICONS['sun']}</span></button></div>")
-    sub = f"<small>for {escape(client)}</small>" if client else "<small>outbound meetings for a 3PL</small>"
+    sub = f"<small>for {escape(client)}</small>" if client else f"<small>{TAGLINE}</small>"
     return f"""<!doctype html><html lang=en data-theme=light><head><meta charset=utf-8>
 <meta name=viewport content="width=device-width,initial-scale=1">{head}
 <script>document.documentElement.dataset.theme=localStorage.getItem('theme')||'light'</script>
-<title>{escape(title)} &middot; SDR service</title><style>{CSS}</style></head>
-<body><header class=top><div class=topin><a class=brand href='/'><span class=logo>{ICONS['send']}</span>
-<span>SDR service{sub}</span></a>{nav}{theme}</div></header>
+<link rel=icon href="{FAVICON}"><link rel=preconnect href="https://fonts.googleapis.com">
+<link rel=stylesheet href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<title>{escape(title)} &middot; Backhaul</title><style>{CSS}</style></head>
+<body class="{'bare' if bare else ''}">{'' if bare else f"""<header class=top><div class=topin>
+<a class=brand href='/' aria-label='Backhaul home'><span class=logo>{LOGO}</span>
+<span><span class=brandname>Back<b>haul</b></span>{sub}</span></a>{nav}{theme}</div></header>"""}
 <main><h1>{escape(title)}</h1>{body}</main>
 <dialog id=confirm class=modal><form method=dialog><div class=modal-body></div>
 <div class=modal-actions><button class="btn ghost" value=no>Cancel</button>
