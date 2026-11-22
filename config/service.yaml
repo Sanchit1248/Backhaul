@@ -51,6 +51,10 @@ triggers:
   dedupe_days: 3            # same company + type within N days = same event
   weights: {hiring: 1.0, expansion: 1.5, funding: 1.2}
   ignore_types: [layoffs, downsizing]
+  # a job post whose function is one of these is not a freight trigger ("HR Generalist - Warehouse HR")
+  hiring_exclude_title_words: [hr, human resources, recruiter, recruitment, talent acquisition,
+    payroll, accountant, accounts, finance, audit, tax, software, developer, it support,
+    marketing, sales, business development, legal]
   conflict_types: [funding, expansion]   # one event, one true value: differing sources -> cannot verify
 
 identity:
@@ -92,6 +96,13 @@ buyer:
     - head of operations
     - chief operating officer
   max_candidates: 3
+  # a title naming one of these functions is never the buyer, even with "supply chain" in it
+  exclude_title_words: [information technology, it, technology, software, digital, data,
+    analytics, finance, financial, accounts, accounting, controller, audit, tax, hr,
+    human resources, talent, recruitment, payroll, legal, compliance, marketing, sales,
+    business development, esg, sustainability, quality, research, r&d, engineering,
+    internal controls]
+  junior_title_words: [assistant, asst, associate, junior, jr, trainee, intern]  # ranked last
   countries: [India]          # buyer must be located here (multinationals: not the Canada COO)
   fetch_business_email: true   # +1 credit per verified buyer; email kept only if tied to the employer id
 

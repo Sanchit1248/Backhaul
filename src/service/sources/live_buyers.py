@@ -78,14 +78,63 @@ def _tokens(title: str | None) -> list[str]:
     return [t for t in out if t not in _FILLER]
 
 
+# Functions that are not the freight buyer even when the title also says "supply chain"
+# ("Head of Information Technology - Supply chain", "Head of Supply Chain Finance").
+# Config buyer.exclude_title_words overrides this list.
+EXCLUDE_TITLE_WORDS = [
+    "information technology", "it", "technology", "software", "digital", "data",
+    "analytics", "finance", "financial", "accounts", "accounting", "controller", "audit",
+    "tax", "hr", "human resources", "talent", "recruitment", "payroll", "legal",
+    "compliance", "marketing", "sales", "business development", "esg", "sustainability",
+    "quality", "research", "r&d", "engineering", "internal controls",
+]
+
+
+def _exclude_words() -> list[str]:
+    try:
+        from ..config import settings
+
+        words = settings().get("buyer", {}).get("exclude_title_words")
+    except Exception:  # noqa: BLE001 - config unavailable in isolated tests
+        words = None
+    return EXCLUDE_TITLE_WORDS if words is None else list(words)
+
+
+def excluded_function(title: str | None, words: list[str] | None = None) -> str | None:
+    """The non-buyer function named in `title` (whole words, case-insensitive), or None."""
+    text = " " + " ".join(re.findall(r"[a-z0-9&]+", (title or "").lower())) + " "
+    for w in (_exclude_words() if words is None else words):
+        phrase = " ".join(re.findall(r"[a-z0-9&]+", w.lower()))
+        if phrase and f" {phrase} " in text:
+            return w
+    return None
+
+
 def title_rank(title: str | None, titles: list[str]) -> int | None:
-    """Index of the first configured title whose tokens all appear in `title`."""
+    """Index of the first configured title whose tokens all appear in `title`; None when
+    the title names a non-buyer function (IT, finance, HR, sales...)."""
+    if excluded_function(title):
+        return None
     have = set(_tokens(title))
     for i, want in enumerate(titles):
         need = _tokens(want)
         if need and set(need) <= have:
-            return i
+            # junior qualifiers ("Asst Mgr - Logistics") rank after every senior match
+            return i + len(titles) if excluded_function(title, _junior_words()) else i
     return None
+
+
+JUNIOR_TITLE_WORDS = ["assistant", "asst", "associate", "junior", "jr", "trainee", "intern"]
+
+
+def _junior_words() -> list[str]:
+    try:
+        from ..config import settings
+
+        words = settings().get("buyer", {}).get("junior_title_words")
+    except Exception:  # noqa: BLE001
+        words = None
+    return JUNIOR_TITLE_WORDS if words is None else list(words)
 
 
 def title_matches(title: str | None, titles: list[str]) -> bool:

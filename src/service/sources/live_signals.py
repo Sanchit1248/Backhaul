@@ -390,14 +390,43 @@ def _format_round_type(raw: str | None) -> str:
 # ----------------------------------------------------------- hiring (T4/F1) ---
 
 
+# Job functions that are not a freight need even when the title says "warehouse"
+# ("HR Generalist - Warehouse HR", "Warehouse Accountant"). Config
+# triggers.hiring_exclude_title_words overrides this list.
+HIRING_EXCLUDE_TITLE_WORDS = [
+    "hr", "human resources", "recruiter", "recruitment", "talent acquisition", "payroll",
+    "accountant", "accounts", "finance", "audit", "tax", "software", "developer",
+    "it support", "marketing", "sales", "business development", "legal",
+]
+
+
+def _hiring_exclude_words() -> list[str]:
+    try:
+        from ..config import settings
+
+        words = settings().get("triggers", {}).get("hiring_exclude_title_words")
+    except Exception:  # noqa: BLE001 - config unavailable in isolated tests
+        words = None
+    return HIRING_EXCLUDE_TITLE_WORDS if words is None else list(words)
+
+
+def _names_function(text: str, words: list[str]) -> bool:
+    norm = " " + " ".join(re.findall(r"[a-z0-9&]+", text.lower())) + " "
+    return any(f" {' '.join(re.findall(r'[a-z0-9&]+', w.lower()))} " in norm
+               for w in words if w.strip())
+
+
 def is_relevant_logistics_job_title(title: str | None) -> bool:
-    """Reject non-freight keyword hits such as visa/travel admin roles."""
+    """Reject non-freight keyword hits such as visa/travel admin roles, and roles whose
+    function is not freight (HR, accounts, sales...) even inside a warehouse."""
     if not title or not isinstance(title, str):
         return False
     text = title.strip()
     if not text or not _POSITIVE_JOB_ROLE_RE.search(text):
         return False
     if _NON_FREIGHT_TITLE_RE.search(text) and not _STRONG_FREIGHT_ROLE_RE.search(text):
+        return False
+    if _names_function(text, _hiring_exclude_words()):
         return False
     return True
 
