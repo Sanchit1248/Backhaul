@@ -2,7 +2,10 @@
 
 **Fill every empty mile.** An outbound sales-development service for a 3PL.
 
-**Demo Video:** [https://drive.google.com/drive/folders/1apNg_tCQgF5KQPw5oo1h5IR8Do6VglNl?usp=sharing](https://drive.google.com/file/d/1oQZeU0v1hdCjz1NPQ22CCaKSqqeprujb/view?usp=sharing)
+### Demo
+- **Video:** [backhaul-demo.mp4](backhaul-demo.mp4) (in this repo; GitHub plays it when opened) ·
+  [watch on Google Drive](https://drive.google.com/file/d/1oQZeU0v1hdCjz1NPQ22CCaKSqqeprujb/view?usp=sharing)
+- **Live demo:** [backhaul-cyan.vercel.app](https://backhaul-cyan.vercel.app) (test data only, resets; sign in with your name and the demo password)
 
 **ContextCon 05 "Services, Replaced" · Revenue track**
 
@@ -17,7 +20,8 @@ of guessing.
 
 | | |
 |---|---|
-| **Run it** | `python -m service.web` → http://127.0.0.1:8000 (browser) · or `python -m service.cli run <request.json>` | or | https://backhaul-cyan.vercel.app
+| **Run it** | `python -m service.web` → http://127.0.0.1:8000 (browser) · or `python -m service.cli run <request.json>` |
+| **Live demo** | [backhaul-cyan.vercel.app](https://backhaul-cyan.vercel.app) · test data only (Vercel), resets |
 | **Live data** | Crustdata company, job, person and web APIs (default `sources.mode: live`) |
 | **Measured** | Live Pune → Mumbai job, 22 Nov 2026: 100 job posts → 36 hiring companies → 9 pass filters → 4 approval-ready drafts, **₹1,179** (Crustdata-reported), **₹295 per draft** |
 | **Checks** | 28 / 28 hard-case evals pass (no WRONG) · 143 tests pass, 26 skipped (saved live samples not in the repo) |
