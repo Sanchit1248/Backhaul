@@ -21,10 +21,12 @@ Each fact has a source. No trigger older than 30 days. No lookalike company or d
 ## Data sources the service calls
 | Source | Used for | Live? | Cost |
 |---|---|---|---|
-| Crustdata company identify / enrichment | identity, locations, funding | yes | _credits/call (smoke test)_ |
-| Crustdata job search | hiring triggers (posting date, location) | yes | _credits_ |
-| Crustdata web search + fetch | expansion news, exact passage | yes | _credits_ |
-| Crustdata person search / enrichment | buyer, current employer, role start | yes | _credits_ |
+| Crustdata company identify / enrichment | identity, locations, funding, news | yes | identify 0.2 credits per match (unmatched free); enrich 2 credits per company |
+| Crustdata job search | hiring triggers (posting date, location) | yes | 0.03 credits per result |
+| Crustdata web search + fetch | expansion news, exact passage | yes | 1 credit per page |
+| Crustdata person search / enrichment | buyer, current employer, role start | yes | search 0.03 per result; enrich 1 per person |
+
+Our key's limits (from `GET /account/endpoints`, 22 Nov 2026): 5 requests/min on identify, enrich and search (batch up to 25 identifiers per call); `/live` endpoints, batch endpoints and **person contact enrich (emails) are not enabled**.
 | MCA / GST registry pages | legal name, principal place of business (fallback) | yes | free |
 | Company websites (careers, locations, press) | fallback triggers and locations | yes | free |
 | Client records (kickoff kit) | routes, capacity, clients, do-not-contact list | n/a | n/a |
