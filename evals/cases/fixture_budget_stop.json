@@ -1,0 +1,22 @@
+{
+  "id": "fixture_budget_stop",
+  "sources": "fixtures",
+  "fixtures_file": "tests/fixtures/sources_basic.json",
+  "note": "Plan hard case 'budget almost used up'. Earlier paid calls use the whole job budget just before the buyer step (simulated: fixture calls are free). Expect: stop with stopped_limit, keep finished decisions (drop/exclude/lookalike/cannot-verify), hold the rest with the budget reason, queue nothing for sending.",
+  "request": {
+    "job_id": "eval-fixture-budget-stop",
+    "text": "Book 5 meetings for the Pune to Mumbai route; spare capacity 12 trucks a week",
+    "request_date": "2026-11-20"
+  },
+  "simulate_spend": {"before_step": "07_buyer", "fraction_of_limit": 1.01},
+  "expected_job": {"status": "stopped_limit", "notes_contain": "stopped before 07_buyer", "queued_actions": 0},
+  "expected": {
+    "Kaveri Agro Foods Pvt Ltd": {"status": "held", "reason_contains": "budget limit reached before step 07_buyer"},
+    "Deccan Pharma Ltd": {"status": "held", "reason_contains": "budget limit reached before step 07_buyer"},
+    "Vidarbha Steel Ltd": {"status": "held", "reason_contains": "budget limit reached before step 07_buyer"},
+    "Sahyadri Auto Components Ltd": {"status": "dropped", "reason_contains": "no trigger within 30 days"},
+    "Shree Polymers": {"status": "held", "reason_contains": "lookalike"},
+    "Konkan Retail Pvt Ltd": {"status": "excluded", "reason_contains": "do-not-contact"},
+    "Indus Chem Ltd": {"status": "cannot_verify"}
+  }
+}
