@@ -29,5 +29,11 @@ def env(name: str, default: str | None = None) -> str | None:
     return os.environ.get(name, default)
 
 
+def demo_mode() -> bool:
+    """BACKHAUL_DEMO=1 (the Vercel demo): test data only, jobs run inside the request,
+    data lives in a temporary folder and resets."""
+    return os.environ.get("BACKHAUL_DEMO", "").lower() in ("1", "true", "yes")
+
+
 def usd_to_inr(usd: float) -> float:
     return usd * float(settings()["costs"]["usd_to_inr"])

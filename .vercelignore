@@ -1,0 +1,14 @@
+# never upload secrets, local data or dev files
+.env
+data/
+.venv/
+venv/
+.claude/
+.git/
+**/__pycache__/
+.pytest_cache/
+docs/*.pdf
+evals/
+scripts/
+tests/*
+!tests/fixtures/

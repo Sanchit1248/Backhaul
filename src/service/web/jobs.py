@@ -17,7 +17,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from ..config import ROOT
+from ..config import ROOT, demo_mode
 
 FINAL = {"done", "awaiting_approval", "partial", "stopped_limit"}
 
@@ -107,6 +107,8 @@ class JobRunner:
             if not self.request_path(job_id).exists():
                 raise FileNotFoundError(f"no request saved for job {job_id}")
             meta = self.meta(job_id)
+            if demo_mode():
+                mode = "fixtures"   # the hosted demo never calls paid sources
             if mode is not None:
                 meta["mode"] = mode
             meta.setdefault("created", time.time())
@@ -120,8 +122,11 @@ class JobRunner:
                 cmd += ["--mode", meta["mode"]]
             env = {**os.environ, "PYTHONIOENCODING": "utf-8",
                    "SERVICE_DATA_DIR": str(self.data_dir),
-                   "PYTHONPATH": os.pathsep.join(
-                       [str(ROOT / "src"), os.environ.get("PYTHONPATH", "")]).strip(os.pathsep)}
+                   # the child sees the same packages as this process (needed on serverless
+                   # platforms, where dependencies are not installed site-wide)
+                   "PYTHONPATH": os.pathsep.join(dict.fromkeys(
+                       [str(ROOT / "src"), *os.environ.get("PYTHONPATH", "").split(os.pathsep),
+                        *[x for x in sys.path if x]])).strip(os.pathsep)}
             env.pop("SERVICE_CRASH_AT", None)
             log = open(self.log_path(job_id), "ab")  # noqa: SIM115 - handed to the child
             log.write(f"\n===== {reason} {datetime.now():%Y-%m-%d %H:%M:%S} by {by} =====\n"
@@ -132,6 +137,10 @@ class JobRunner:
                                                   stderr=subprocess.STDOUT,
                                                   creationflags=flags)
             log.close()
+            if demo_mode():
+                # serverless: a background process would be frozen after the response,
+                # so the demo runs the (test-data) job to the end inside the request
+                self.procs[job_id].wait(timeout=55)
 
     def stop(self, job_id: str) -> bool:
         """Hard-kill the job process (like taskkill /F). Resume re-runs the same request."""

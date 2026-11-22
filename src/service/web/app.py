@@ -25,7 +25,7 @@ from urllib.parse import quote
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
-from ..config import env, settings, usd_to_inr
+from ..config import demo_mode, env, settings, usd_to_inr
 from ..ledger import Ledger
 from ..steps.s01_intake import load_client_records, parse_request
 from .jobs import JobRunner, new_job_id
@@ -277,7 +277,7 @@ on the job page to send it (the job's send step sends each email + invite exactl
     <label>Cost limit (₹)<input name=budget_inr type=number min=1 step=1
       value="{int(default_budget)}" required></label>
   </div>
-  <label class=check><input type=checkbox name=rehearsal value=1 {'' if live else 'checked'}>
+  <label class=check><input type=checkbox name=rehearsal value=1 {'checked disabled' if demo_mode() else '' if live else 'checked'}>{'<input type=hidden name=rehearsal value=1>' if demo_mode() else ''}
     <span><b>Rehearsal</b>: use test data (no Crustdata credits, finishes in seconds)</span></label>
   <p class=muted>A live job takes about 5-10 minutes (the data provider allows 5 requests a
     minute). You can leave the page; progress is saved.</p>
@@ -307,7 +307,7 @@ on the job page to send it (the job's send step sends each email + invite exactl
                "spare_trucks_per_week": int(trucks) if trucks.strip() else None,
                "request_date": day.isoformat(), "budget_inr": float(budget_inr)}
         try:
-            jobs.start(job_id, raw, mode="fixtures" if rehearsal else None, by=name)
+            jobs.start(job_id, raw, mode="fixtures" if rehearsal or demo_mode() else None, by=name)
         except RuntimeError as e:
             return back(str(e))
         return RedirectResponse(f"/jobs/{job_id}", status_code=303)
@@ -725,6 +725,9 @@ LOGO = """<svg viewBox="0 0 48 48" width="36" height="36" aria-hidden="true">
 <path d="M20 27l-4.5 5 4.5 5" fill="none" stroke="#fb923c" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
 <rect x="9" y="13" width="9" height="7" rx="1.6" fill="#fff"/><circle cx="11.5" cy="21.5" r="1.6" fill="#fb923c"/>
 <circle cx="16" cy="21.5" r="1.6" fill="#fb923c"/></svg>"""
+DEMO_BANNER = ("<div class=demobar role=note><b>Demo</b> &middot; runs on test data only (no live "
+               "sources, nothing is emailed) and resets from time to time. The full service runs "
+               "on a server with live data.</div>")
 ROUTES = """<svg class=routes viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
 <path d="M-50 650 C 250 520, 420 700, 640 560 S 980 380, 1260 470"/>
 <path d="M-50 260 C 220 160, 470 330, 700 220 S 1050 80, 1260 150"/>
@@ -1207,6 +1210,8 @@ dialog.modal[open]{animation:pop .3s var(--ease)}.modal-body{padding:22px 24px 8
 /* Backhaul additions (UI/UX Pro Max: trust blue + orange CTA, 44px targets, visible focus) */
 .btn,button.btn{min-height:42px}.btn.lg{min-height:48px}
 .btn.primary{background:linear-gradient(135deg,#2563eb,#1d4ed8);box-shadow:0 4px 14px rgba(37,99,235,.32)}
+.demobar{position:relative;z-index:15;text-align:center;font-size:13px;padding:8px 16px;background:var(--warn-bg);color:var(--warn);border-bottom:1px solid var(--line)}
+body.bare .demobar{position:fixed;top:0;left:0;right:0}
 .btn.cta{color:#fff;border:0;background:linear-gradient(135deg,var(--cta),var(--cta2));box-shadow:0 4px 14px var(--cta-ring)}
 .btn.cta:hover{filter:brightness(1.06);box-shadow:0 8px 22px var(--cta-ring)}
 .brandname{font-weight:800;letter-spacing:-.02em;font-size:18px}
@@ -1410,7 +1415,7 @@ def layout(title: str, body: str, name: str = "", tab: str = "", pending: int = 
 <body class="{'bare' if bare else ''}">{'' if bare else f"""<header class=top><div class=topin>
 <a class=brand href='/' aria-label='Backhaul home'><span class=logo>{LOGO}</span>
 <span><span class=brandname>Back<b>haul</b></span>{sub}</span></a>{nav}{theme}</div></header>"""}
-<main><h1>{escape(title)}</h1>{body}</main>
+{DEMO_BANNER if demo_mode() else ''}<main><h1>{escape(title)}</h1>{body}</main>
 <dialog id=confirm class=modal><form method=dialog><div class=modal-body></div>
 <div class=modal-actions><button class="btn ghost" value=no>Cancel</button>
 <button class="btn primary modal-yes" value=yes>Confirm</button></div></form></dialog>
