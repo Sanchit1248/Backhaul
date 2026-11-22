@@ -37,7 +37,9 @@ def main(argv: list[str] | None = None) -> int:
         a.add_argument("--by", required=True)
     c = sub.add_parser("cost")
     c.add_argument("job_id")
-    lg = sub.add_parser("logs")
+    c.add_argument("--calls", action="store_true",
+                   help="every paid call with its request id (to match provider usage logs)")
+    lg =sub.add_parser("logs")
     lg.add_argument("job_id")
     ob = sub.add_parser("outbox")
     ob.add_argument("job_id")
@@ -75,6 +77,29 @@ def main(argv: list[str] | None = None) -> int:
             print(*row, sep="\t")
         usd = ledger.run_cost(args.job_id)
         print(f"TOTAL\t${usd:.6f}\tRs {usd_to_inr(usd):.2f}")
+        credits = ledger.credit_breakdown(args.job_id)
+        if credits:
+            print("\nCREDITS\tprovider\top\tcalls\tstatuses\testimated_max\treported"
+                  "\tbudgeted\tcalls_without_reported_credits")
+            for a in credits:
+                sts = ",".join(f"{k}x{v}" for k, v in sorted(a["statuses"].items()))
+                print(f"\t{a['provider']}\t{a['op']}\t{a['calls']}\t{sts}"
+                      f"\t{a['estimated_max']:g}\t{a['reported']:g}\t{a['budgeted']:g}"
+                      f"\t{a['unreported_calls']}")
+            rep = sum(a["reported"] for a in credits)
+            bud = sum(a["budgeted"] for a in credits)
+            unrep = sum(a["unreported_calls"] for a in credits)
+            print(f"CREDITS TOTAL\treported {rep:g}\tbudgeted {bud:g}"
+                  f"\t{unrep} call(s) without a reported figure (budgeted at the estimate, or 0 if rejected)")
+            print("Compare 'reported' with Crustdata's usage for this run's time window;"
+                  " --calls lists request ids.")
+        if args.calls:
+            print("\nCALLS\tprovider\top\tstatus\treported\tbudgeted\trequest_id\tstarted_at")
+            for r in ledger.cost_rows(args.job_id):
+                u = r["units"]
+                print(f"\t{r['provider']}\t{r['op']}\t{u.get('status')}"
+                      f"\t{u.get('reported_credits')}\t{u.get('budgeted_credits')}"
+                      f"\t{u.get('request_id')}\t{u.get('started_at')}")
     elif args.cmd == "logs":
         for row in ledger.db.execute(
             "SELECT datetime(at,'unixepoch'), level, msg FROM events WHERE run_id=? ORDER BY id",

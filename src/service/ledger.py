@@ -244,6 +244,36 @@ class Ledger:
             " WHERE run_id=? GROUP BY provider, op", (run_id,)
         ).fetchall()
 
+    def cost_rows(self, run_id: str) -> list[dict]:
+        """Every cost row with its units decoded (credits, status, request id)."""
+        rows = self.db.execute(
+            "SELECT provider, op, units, cost_usd, ms, at FROM costs WHERE run_id=? ORDER BY id",
+            (run_id,)).fetchall()
+        return [{"provider": pr, "op": op, "units": json.loads(u) if u else {},
+                 "cost_usd": c, "ms": ms, "at": at} for pr, op, u, c, ms, at in rows]
+
+    def credit_breakdown(self, run_id: str) -> list[dict]:
+        """Per provider+op: calls, credits we estimated (max), credits the provider
+        reported, credits we budgeted, and calls with no reported credits."""
+        agg: dict[tuple, dict] = {}
+        for r in self.cost_rows(run_id):
+            u = r["units"]
+            if "budgeted_credits" not in u:
+                continue  # not a credit-priced call (e.g. LLM tokens)
+            a = agg.setdefault((r["provider"], r["op"]), {
+                "provider": r["provider"], "op": r["op"], "calls": 0, "estimated_max": 0.0,
+                "reported": 0.0, "budgeted": 0.0, "unreported_calls": 0, "statuses": {}})
+            a["calls"] += 1
+            a["estimated_max"] += u.get("estimated_max_credits") or 0.0
+            a["budgeted"] += u.get("budgeted_credits") or 0.0
+            if u.get("reported_credits") is None:
+                a["unreported_calls"] += 1
+            else:
+                a["reported"] += u["reported_credits"]
+            st = str(u.get("status"))
+            a["statuses"][st] = a["statuses"].get(st, 0) + 1
+        return list(agg.values())
+
     # ---- structured log -------------------------------------------------
     def log(self, run_id: str, level: str, msg: str, data: Any = None) -> None:
         self.db.execute(
