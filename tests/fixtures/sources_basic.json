@@ -20,7 +20,7 @@
         {"type": "hiring", "summary": "Logistics Manager opening on careers page", "event_date": "2026-11-12",
          "fact": {"claim": "Kaveri Agro Foods careers page lists a Logistics Manager opening in Pune", "sources": [{"url": "https://kaveriagro.example/careers/logistics-manager", "kind": "web_page", "excerpt": "Logistics Manager - Pune plant. Posted 12 November 2026.", "record_date": "2026-11-12"}]}}
       ],
-      "people": [{"name": "Anita Rao", "title": "Head of Supply Chain", "person_id": "p-1", "employer_id": "cd-1001", "employer_name": "Kaveri Agro Foods Pvt Ltd", "role_start": "2023-04-01", "business_email": "anita.rao@kaveriagro.example", "profile_url": "https://api.crustdata.example/person/p-1"}]
+      "people": [{"name": "Anita Rao", "title": "Head of Supply Chain", "person_id": "p-1", "employer_id": "cd-1001", "employer_name": "Kaveri Agro Foods Pvt Ltd", "role_start": "2023-04-01", "business_email": "anita.rao@kaveriagro.example", "profile_url": "https://api.crustdata.example/person/p-1", "facts": [{"claim": "Fixture employment recheck: Anita Rao still holds Head of Supply Chain at employer cd-1001", "value": "indexed: current role rechecked (person_enrich)", "sources": [{"url": "https://api.crustdata.example/person/p-1", "kind": "api_response", "excerpt": "employment.current[0] = {employer_id: cd-1001, title: Head of Supply Chain, start_date: 2023-04-01, end_date: null}", "field_path": "employment.current[0]", "record_date": "2026-11-15"}]}]}]
     },
     "Sahyadri Auto Components": {
       "_case": "only trigger is 45 days old -> dropped",
@@ -49,7 +49,7 @@
       ],
       "people": [
         {"name": "Rahul Mehta", "title": "VP Supply Chain", "person_id": "p-2", "employer_id": "cd-1004", "role_start": "2021-01-01", "business_email": "rahul.mehta@deccanpharma.example"},
-        {"name": "Priya Nair", "title": "Head of Logistics", "person_id": "p-3", "employer_id": "cd-1004", "employer_name": "Deccan Pharma Ltd", "role_start": "2024-06-01", "business_email": "priya.nair@deccanpharma.example"}
+        {"name": "Priya Nair", "title": "Head of Logistics", "person_id": "p-3", "employer_id": "cd-1004", "employer_name": "Deccan Pharma Ltd", "role_start": "2024-06-01", "business_email": "priya.nair@deccanpharma.example", "facts": [{"claim": "Fixture employment recheck: Priya Nair still holds Head of Logistics at employer cd-1004", "value": "indexed: current role rechecked (person_enrich)", "sources": [{"url": "https://api.crustdata.example/person/p-3", "kind": "api_response", "excerpt": "employment.current[0] = {employer_id: cd-1004, title: Head of Logistics, start_date: 2024-06-01, end_date: null}", "field_path": "employment.current[0]", "record_date": "2026-11-15"}]}]}
       ]
     },
     "Konkan Retail": {
