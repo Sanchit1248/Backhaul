@@ -7,6 +7,7 @@ re-checked so every claim still maps to a Fact.
 """
 from __future__ import annotations
 
+from ..config import env
 from ..mailer import build_ics
 from ..models import EmailDraft, Prospect
 from . import Ctx, active
@@ -15,7 +16,13 @@ from . import Ctx, active
 def run(ctx: Ctx, prospects: list[Prospect]) -> list[Prospect]:
     e = ctx.cfg["email"]
     client = ctx.client.name
+    # Organizer = the real sender mailbox. Without one the invite is METHOD:PUBLISH
+    # (Outlook rejects a REQUEST with no ORGANIZER). Never invent an address.
+    organizer = e.get("sender_email") or env("SENDER_EMAIL")
     for p in active(prospects):
+        if not (p.buyer and p.buyer.business_email):
+            p.hold("no verified business email for the buyer")
+            continue
         t = max(p.triggers, key=lambda t: ctx.cfg["triggers"]["weights"].get(t.type, 1.0))
         fit = p.route_fit
         claims = [t.fact, *fit.facts]
@@ -31,13 +38,16 @@ def run(ctx: Ctx, prospects: list[Prospect]) -> list[Prospect]:
             "source_list": sources,
         }
         fields["sender_name"] = e["sender_name"].format(**fields)
+        meeting = f"{e['meeting_minutes']}-minute call: spare truck capacity on {route}"
         p.draft = EmailDraft(
             to=p.buyer.business_email,
             subject=e["subject"].format(**fields),
             body=e["template"].format(**fields),
             claims=claims,
             ics=build_ics(uid=p.prospect_id, title=f"{client} x {p.company.name}",
-                          attendee=p.buyer.business_email, minutes=e["meeting_minutes"],
+                          attendee=p.buyer.business_email, attendee_name=p.buyer.name,
+                          organizer=organizer, organizer_name=fields["sender_name"],
+                          description=meeting, minutes=e["meeting_minutes"],
                           start_after=ctx.job.request_date),
         )
     return prospects
