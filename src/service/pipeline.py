@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from .budget import Budget, BudgetExceeded
 from .config import settings, usd_to_inr
+from .faults import maybe_crash
 from .ledger import Ledger
 from .models import JobResult, Prospect, Status
 from .sources import get_sources
@@ -51,17 +52,25 @@ def run(raw_request: dict, ledger: Ledger | None = None) -> JobResult:
 
     prospects: list[Prospect] = []
     status = "done"
-    try:
-        for name, fn in CHECKPOINTED:
-            data = ledger.step(job.job_id, name, lambda fn=fn, ps=prospects: [
-                p.model_dump(mode="json") for p in fn(ctx, ps)])
-            prospects = [Prospect.model_validate(d) for d in data]
-        for _name, fn in ALWAYS:
-            prospects = fn(ctx, prospects)
-    except BudgetExceeded as e:
-        ledger.log(job.job_id, "error", str(e))
-        ctx.notes.append(f"stopped: {e}; partial result")
-        status = "stopped_limit"
+    for name, fn in CHECKPOINTED:
+        try:
+            data = ledger.step(job.job_id, name, lambda fn=fn, ps=prospects, name=name: _do_step(
+                ctx, name, fn, ps))
+        except BudgetExceeded as e:
+            # Plan rule "budget almost used up": stop, keep finished work, report partial.
+            # The failed step is NOT checkpointed, so raising the limit and re-running
+            # resumes exactly here.
+            ledger.log(job.job_id, "error", f"{name}: {e}")
+            ctx.notes.append(f"stopped before {name}: {e}; partial result")
+            for p in prospects:
+                if p.active:
+                    p.hold(f"budget limit reached before step {name}")
+            status = "stopped_limit"
+            break
+        prospects = [Prospect.model_validate(d) for d in data]
+        maybe_crash(f"after:{name}")
+    for _name, fn in ALWAYS:  # free + idempotent: always finish queued/approved actions
+        prospects = fn(ctx, prospects)
 
     if status == "done" and any(p.status == Status.AWAITING_APPROVAL for p in prospects):
         status = "awaiting_approval"
@@ -71,6 +80,12 @@ def run(raw_request: dict, ledger: Ledger | None = None) -> JobResult:
                        cost_inr=round(usd_to_inr(cost_usd), 2), notes=ctx.notes)
     ledger.set_run(job.job_id, status, {"summary": summarize(result)})
     return result
+
+
+def _do_step(ctx: Ctx, name: str, fn, prospects: list[Prospect]) -> list[dict]:
+    """Runs only when the step has no checkpoint yet (ledger.step skips it otherwise)."""
+    ctx.budget.check(f"before {name}")
+    return [p.model_dump(mode="json") for p in fn(ctx, prospects)]
 
 
 def summarize(r: JobResult) -> list[dict]:
