@@ -35,6 +35,23 @@ Our key's limits (from `GET /account/endpoints`, 22 Nov 2026): 5 requests/min on
 ## Architecture
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): the ten steps, step log, outbox, approval queue, retries, cost ledger.
 
+## Use it in the browser
+```powershell
+python -m service.web          # then open http://127.0.0.1:8000 (password: APPROVER_PASSWORD in .env)
+```
+1. Type the request in plain English, e.g. *Book 5 meetings for the Pune to Mumbai route; spare
+   capacity 12 trucks a week*, and press **Next**.
+2. Check what was understood (lane, meetings, spare trucks, date, cost limit) and fix anything.
+   Tick **Rehearsal** to run on test data without spending Crustdata credits. Press **Run the job**.
+3. The job page shows live progress (a live job takes ~5-10 minutes), then every company with its
+   status, reason, trigger source, route fit and buyer, and the drafts waiting for approval.
+4. **Approve / Edit / Reject** each draft, then **Send approved**: the job's send step sends each
+   approved email + invite exactly once. **Stop** hard-kills a running job; **Resume** continues
+   from the last finished step.
+
+Each browser job is the same `svc run` process as the CLI below, so logs, costs and kill/restart
+behave the same; jobs started from the CLI also appear in the browser's job list.
+
 ## Quickstart
 ```powershell
 .\scripts\setup.ps1                 # venv + deps (pip install -e ".[dev]") + .env + tests

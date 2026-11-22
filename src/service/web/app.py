@@ -1,8 +1,10 @@
-"""Approval page: one list of pending actions with full evidence + approve/edit/reject.
+"""Browser app: type a request, confirm what was understood, watch the job run, review
+every company and draft with its sources, approve/edit/reject, and send approved emails.
 
 Rules this file keeps:
-  * it only calls ledger.get_action / pending_approvals / decide / update_payload;
-    it never imports the mailer or step 10, so nothing is ever sent from here;
+  * decisions only call ledger.get_action / pending_approvals / decide / update_payload;
+    it never imports the mailer or step 10. Jobs (including "send approved") run as the
+    same `svc run` process as the CLI (web/jobs.py), so step 10 is the only sender;
   * every decision records the approver's name (from login);
   * an edit may change subject + body only (not the recipient or the invite), must keep
     the unsubscribe line, and may only cite [n] markers that map to a sourced claim.
@@ -21,8 +23,12 @@ from urllib.parse import quote
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
-from ..config import env, usd_to_inr
+from datetime import date, datetime
+
+from ..config import env, settings, usd_to_inr
 from ..ledger import Ledger
+from ..steps.s01_intake import parse_request
+from .jobs import JobRunner, new_job_id
 
 COOKIE = "svc_approver"
 MAX_BODY = 10_000
@@ -30,9 +36,10 @@ _MARKER = re.compile(r"\[(\d+)\]")
 
 
 def create_app(ledger: Ledger | None = None, password: str | None = None,
-               session_secret: str | None = None) -> FastAPI:
-    app = FastAPI(title="SDR approvals", docs_url=None, redoc_url=None, openapi_url=None)
+               session_secret: str | None = None, runner: JobRunner | None = None) -> FastAPI:
+    app = FastAPI(title="SDR service", docs_url=None, redoc_url=None, openapi_url=None)
     led = ledger or Ledger()
+    jobs = runner or JobRunner(led.path.parent)
     pw = password if password is not None else (env("APPROVER_PASSWORD") or "")
     secret = (session_secret or env("APPROVER_SESSION_SECRET") or secrets.token_hex(32)).encode()
     lock = threading.Lock()  # one sqlite connection shared by the threadpool
@@ -74,8 +81,20 @@ def create_app(ledger: Ledger | None = None, password: str | None = None,
             raise HTTPException(409, f"action is {a['status']}, not pending approval")
         return a
 
-    def back(msg: str) -> RedirectResponse:
-        return RedirectResponse(f"/?msg={quote(msg)}", status_code=303)
+    def back(msg: str, next_: str = "/") -> RedirectResponse:
+        dest = next_ if re.fullmatch(r"/(jobs/[\w.-]+)?", next_ or "") else "/"
+        return RedirectResponse(f"{dest}?msg={quote(msg)}", status_code=303)
+
+    def job_row(job_id: str) -> dict:
+        with lock:
+            run = led.get_run(job_id)
+            cost = usd_to_inr(led.run_cost(job_id))
+        req = jobs.request(job_id)
+        res = jobs.result(job_id)
+        return {"id": job_id, "status": jobs.status(job_id, run), "cost": cost,
+                "text": req.get("text", ""), "route": req.get("route") or [],
+                "mode": jobs.meta(job_id).get("mode") or settings()["sources"]["mode"],
+                "result": res, "created": jobs.meta(job_id).get("created")}
 
     # ---- routes ----------------------------------------------------------
     @app.get("/healthz")
@@ -124,30 +143,199 @@ def create_app(ledger: Ledger | None = None, password: str | None = None,
         token = csrf_for(request)
         cards = "".join(render_action(a, run_cost[a["run_id"]], token) for a in pending)
         flash = f"<p class=flash>{escape(msg)}</p>" if msg else ""
-        empty = "<p>Nothing waiting for approval.</p>" if not pending else ""
-        return HTMLResponse(page(f"Pending approvals ({len(pending)})", f"""
+        empty = "<p class=muted>Nothing waiting for approval.</p>" if not pending else ""
+        busy = jobs.running_job()
+        busy_html = (f"<p class=flash>Job <a href='/jobs/{escape(busy)}'>{escape(busy)}</a> is "
+                     "running. A new job can start when it finishes.</p>" if busy else "")
+        rows = "".join(render_job_row(job_row(j)) for j in jobs.job_ids()[:15])
+        jobs_html = (f"<table class=jobs><tr><th>Job</th><th>Request</th><th>Status</th>"
+                     f"<th>Drafts</th><th>Cost</th></tr>{rows}</table>" if rows
+                     else "<p class=muted>No jobs yet.</p>")
+        return HTMLResponse(page("SDR service", f"""
 <div class=bar>Logged in as <b>{escape(name)}</b>
   <form method=post action=/logout class=inline><button class=link>log out</button></form></div>
-<p class=muted>Approving only marks the action approved. Step 10 sends it on the next
-pipeline run (<code>svc run</code> with the same request).</p>
-{flash}{empty}{cards}"""))
+{flash}{busy_html}
+<form method=post action=/jobs/parse class=card>
+  <input type=hidden name=csrf value="{token}">
+  <label><b>What should the service do?</b><br>
+  <textarea name=prompt rows=3 required maxlength=1000
+   placeholder="Book 5 meetings for the Pune to Mumbai route; spare capacity 12 trucks a week"></textarea></label>
+  <button class=ok>Next: check what I understood</button>
+</form>
+<h2>Jobs</h2>{jobs_html}
+<h2>Pending approvals ({len(pending)})</h2>
+<p class=muted>Approving only marks an email approved. It is sent by the job's send step:
+press <b>Send approved</b> on the job page (or re-run the same request).</p>
+{empty}{cards}"""))
+
+    # ---- jobs: prompt -> confirm -> run -> result -------------------------
+    @app.post("/jobs/parse", response_class=HTMLResponse)
+    def parse(request: Request, csrf: str = Form(...), prompt: str = Form(...)) -> Response:
+        require(request, csrf)
+        prompt = " ".join(prompt.split())[:1000]
+        job = parse_request({"text": prompt, "request_date": date.today().isoformat()})
+        route = job.route_filter + ["", ""]
+        warn = ("" if len(job.route_filter) >= 2 else
+                "<p class=err>I could not find two cities for the lane in your request. "
+                "Fill them in below.</p>")
+        default_budget = settings()["limits"]["max_cost_inr"]
+        live = settings()["sources"]["mode"] == "live"
+        return HTMLResponse(page("Check the request", f"""{warn}
+<form method=post action=/jobs class=card>
+  <input type=hidden name=csrf value="{csrf_for(request)}">
+  <input type=hidden name=prompt value="{escape(prompt)}">
+  <p class=muted>Your request: <i>{escape(prompt)}</i></p>
+  <div class=grid>
+    <label>Lane from<br><input name=from_city value="{escape(route[0].title())}" required></label>
+    <label>Lane to<br><input name=to_city value="{escape(route[1].title())}" required></label>
+    <label>Meetings wanted<br><input name=meetings type=number min=1 max=50
+      value="{job.meetings_wanted}" required></label>
+    <label>Spare trucks per week<br><input name=trucks type=number min=0 max=1000
+      value="{job.spare_trucks_per_week if job.spare_trucks_per_week is not None else ''}"
+      placeholder="from client records"></label>
+    <label>Request date (trigger window ends here)<br><input name=request_date type=date
+      value="{job.request_date.isoformat()}" required></label>
+    <label>Cost limit (Rs)<br><input name=budget_inr type=number min=1 step=1
+      value="{int(default_budget)}" required></label>
+  </div>
+  <label class=check><input type=checkbox name=rehearsal value=1 {'' if live else 'checked'}>
+    Rehearsal: use test data (no Crustdata credits)</label>
+  <p class=muted>A live job takes about 5-10 minutes (the data provider allows 5 requests a
+    minute). You can leave this page; progress is saved.</p>
+  <button class=ok>Run the job</button> <a href="/">cancel</a>
+</form>"""))
+
+    @app.post("/jobs")
+    def start_job(request: Request, csrf: str = Form(...), prompt: str = Form(""),
+                  from_city: str = Form(...), to_city: str = Form(...),
+                  meetings: int = Form(...), trucks: str = Form(""),
+                  request_date: str = Form(...), budget_inr: float = Form(...),
+                  rehearsal: str = Form("")) -> Response:
+        name = require(request, csrf)
+        route = [" ".join(from_city.split()).lower(), " ".join(to_city.split()).lower()]
+        if not all(route) or route[0] == route[1]:
+            return back("Give two different cities for the lane.")
+        try:
+            day = date.fromisoformat(request_date)
+        except ValueError:
+            return back("Request date must be YYYY-MM-DD.")
+        job_id = new_job_id(route)
+        raw = {"job_id": job_id,
+               "text": prompt or f"Book {meetings} meetings for the {route[0].title()} to "
+                                 f"{route[1].title()} route",
+               "route": route, "meetings": int(meetings),
+               "spare_trucks_per_week": int(trucks) if trucks.strip() else None,
+               "request_date": day.isoformat(), "budget_inr": float(budget_inr)}
+        try:
+            jobs.start(job_id, raw, mode="fixtures" if rehearsal else None, by=name)
+        except RuntimeError as e:
+            return back(str(e))
+        return RedirectResponse(f"/jobs/{job_id}", status_code=303)
+
+    @app.get("/jobs/{job_id}", response_class=HTMLResponse)
+    def job_page(job_id: str, request: Request, msg: str = "") -> Response:
+        if approver(request) is None:
+            return RedirectResponse("/login", status_code=303)
+        if not re.fullmatch(r"[\w.-]+", job_id) or not jobs.request_path(job_id).exists():
+            raise HTTPException(404, "no such job")
+        j = job_row(job_id)
+        with lock:
+            events = led.db.execute(
+                "SELECT at, level, msg FROM events WHERE run_id=? ORDER BY id DESC LIMIT 25",
+                (job_id,)).fetchall()
+            acts = led.actions_for_run(job_id)
+            run_cost = usd_to_inr(led.run_cost(job_id))
+        token = csrf_for(request)
+        running = j["status"] == "running"
+        refresh = "<meta http-equiv=refresh content=4>" if running else ""
+        pending = [a for a in acts if a["status"] == "pending_approval"]
+        approved = [a for a in acts if a["status"] in ("approved", "started", "failed")]
+        sent = [a for a in acts if a["status"] == "done"]
+        buttons = []
+        if running:
+            buttons.append(form_button(f"/jobs/{job_id}/stop", token, "Stop (hard kill)",
+                                       "bad", "Kill this job now? Run it again to resume."))
+        else:
+            if j["status"] in ("interrupted", "partial", "stopped_limit", "failed"):
+                buttons.append(form_button(f"/jobs/{job_id}/resume", token,
+                                           "Resume from where it stopped", "ok"))
+            if approved:
+                buttons.append(form_button(f"/jobs/{job_id}/send", token,
+                                           f"Send approved ({len(approved)})", "ok",
+                                           f"Send {len(approved)} approved email(s) with "
+                                           "calendar invites? Each is sent once."))
+        log = "".join(f"<li><span class=muted>{datetime.fromtimestamp(at):%H:%M:%S}</span> "
+                      f"<span class='lvl {escape(lv)}'>{escape(lv)}</span> {escape(m)}</li>"
+                      for at, lv, m in reversed(events))
+        res = j["result"] if not running else None
+        result_html = render_result(res) if res else (
+            "<p class=muted>Working... this page refreshes by itself.</p>" if running else
+            f"<pre>{escape(jobs.log_tail(job_id))}</pre>" if j["status"] == "failed" else "")
+        cards = "".join(render_action(a, run_cost, token, next_=f"/jobs/{job_id}")
+                        for a in pending)
+        sent_html = "".join(f"<li>{escape(a['payload'].get('company', ''))}: sent "
+                            f"(approved by {escape(a.get('approved_by') or '?')})</li>"
+                            for a in sent)
+        flash = f"<p class=flash>{escape(msg)}</p>" if msg else ""
+        return HTMLResponse(page(f"Job {job_id}", f"""{refresh}
+<p><a href="/">&larr; all jobs</a></p>{flash}
+<section class=card>
+  <p><b>Request:</b> {escape(j['text'])}</p>
+  <p>Status: <span class="st {escape(j['status'])}">{escape(j['status'])}</span> ·
+    data: {'test data (rehearsal)' if j['mode'] == 'fixtures' else 'live'} ·
+    cost so far: <b>Rs {j['cost']:.2f}</b> ·
+    approved waiting to send: {len(approved)} · sent: {len(sent)}</p>
+  <div class=actions>{''.join(buttons)}</div>
+</section>
+{result_html}
+{"<h2>Waiting for your approval (" + str(len(pending)) + ")</h2>" + cards if pending else ""}
+{"<h2>Sent</h2><ul>" + sent_html + "</ul>" if sent else ""}
+<details {'open' if running else ''}><summary>Progress log</summary><ul class=log>{log}</ul>
+</details>"""))
+
+    def _rerun(job_id: str, request: Request, csrf: str, reason: str) -> Response:
+        name = require(request, csrf)
+        if not jobs.request_path(job_id).exists():
+            raise HTTPException(404, "no such job")
+        try:
+            jobs.start(job_id, by=name, reason=reason)
+        except RuntimeError as e:
+            return back(str(e), f"/jobs/{job_id}")
+        return RedirectResponse(f"/jobs/{job_id}", status_code=303)
+
+    @app.post("/jobs/{job_id}/resume")
+    def resume(job_id: str, request: Request, csrf: str = Form(...)) -> Response:
+        return _rerun(job_id, request, csrf, "resume")
+
+    @app.post("/jobs/{job_id}/send")
+    def send(job_id: str, request: Request, csrf: str = Form(...)) -> Response:
+        return _rerun(job_id, request, csrf, "send approved")
+
+    @app.post("/jobs/{job_id}/stop")
+    def stop(job_id: str, request: Request, csrf: str = Form(...)) -> Response:
+        require(request, csrf)
+        killed = jobs.stop(job_id)
+        return back("Job killed. Press Resume to continue from the last finished step."
+                    if killed else "Job was not running.", f"/jobs/{job_id}")
 
     @app.post("/actions/{key}/approve")
-    def approve(key: str, request: Request, csrf: str = Form(...)) -> Response:
+    def approve(key: str, request: Request, csrf: str = Form(...),
+                next: str = Form("/")) -> Response:  # noqa: A002
         name = require(request, csrf)
         with lock:
             a = pending_action(key)
             led.decide(key, True, by=name)
         return back(f"Approved: {a['payload'].get('company', key)} (by {name}). "
-                    "It will be sent on the next pipeline run.")
+                    "Press 'Send approved' on the job page to send it.", next)
 
     @app.post("/actions/{key}/reject")
-    def reject(key: str, request: Request, csrf: str = Form(...)) -> Response:
+    def reject(key: str, request: Request, csrf: str = Form(...),
+               next: str = Form("/")) -> Response:  # noqa: A002
         name = require(request, csrf)
         with lock:
             a = pending_action(key)
             led.decide(key, False, by=name)
-        return back(f"Rejected: {a['payload'].get('company', key)} (by {name}).")
+        return back(f"Rejected: {a['payload'].get('company', key)} (by {name}).", next)
 
     @app.get("/actions/{key}/edit", response_class=HTMLResponse)
     def edit_form(key: str, request: Request, error: str = "") -> Response:
@@ -239,7 +427,7 @@ def render_claim(i: int | None, fact: dict) -> str:
     return f"<li>{label}{escape(fact.get('claim', ''))}<ul class=src>{srcs}</ul></li>"
 
 
-def render_action(a: dict, run_cost_inr: float, csrf: str) -> str:
+def render_action(a: dict, run_cost_inr: float, csrf: str, next_: str = "/") -> str:
     p, key = a["payload"], a["key"]
     d = p.get("draft", {})
     k = escape(key)
@@ -289,13 +477,79 @@ def render_action(a: dict, run_cost_inr: float, csrf: str) -> str:
   <h3>Buyer evidence</h3>{buyer_html}
   <div class=actions>
     <form method=post action="/actions/{k}/approve" class=inline>
-      <input type=hidden name=csrf value="{csrf}"><button class=ok>Approve</button></form>
+      <input type=hidden name=csrf value="{csrf}"><input type=hidden name=next
+      value="{escape(next_)}"><button class=ok>Approve</button></form>
     <a class=button href="/actions/{k}/edit">Edit</a>
     <form method=post action="/actions/{k}/reject" class=inline
       onsubmit="return confirm('Reject this email? It will never be sent.')">
-      <input type=hidden name=csrf value="{csrf}"><button class=bad>Reject</button></form>
+      <input type=hidden name=csrf value="{csrf}"><input type=hidden name=next
+      value="{escape(next_)}"><button class=bad>Reject</button></form>
   </div>
 </section>"""
+
+
+def form_button(action: str, csrf: str, label: str, cls: str = "", confirm: str = "") -> str:
+    onsubmit = f" onsubmit=\"return confirm('{escape(confirm)}')\"" if confirm else ""
+    return (f'<form method=post action="{escape(action)}" class=inline{onsubmit}>'
+            f'<input type=hidden name=csrf value="{csrf}">'
+            f'<button class="{cls}">{escape(label)}</button></form>')
+
+
+STATUS_ORDER = ["awaiting_approval", "sent", "rejected", "held", "cannot_verify", "excluded",
+                "dropped", "active"]
+
+
+def render_job_row(j: dict) -> str:
+    res = j["result"] or {}
+    drafts = sum(1 for p in res.get("prospects", [])
+                 if p.get("status") in ("awaiting_approval", "sent"))
+    when = (datetime.fromtimestamp(j["created"]).strftime("%d %b %H:%M")
+            if j.get("created") else "")
+    mode = " <span class=tag>test data</span>" if j["mode"] == "fixtures" else ""
+    return (f"<tr><td><a href='/jobs/{escape(j['id'])}'>{escape(when or j['id'])}</a>{mode}</td>"
+            f"<td>{escape(j['text'][:90])}</td>"
+            f"<td><span class='st {escape(j['status'])}'>{escape(j['status'])}</span></td>"
+            f"<td>{drafts if res else ''}</td><td>Rs {j['cost']:.0f}</td></tr>")
+
+
+def render_result(res: dict) -> str:
+    ps = sorted(res.get("prospects", []),
+                key=lambda p: STATUS_ORDER.index(p.get("status"))
+                if p.get("status") in STATUS_ORDER else 99)
+    counts: dict[str, int] = {}
+    for p in ps:
+        counts[p.get("status", "?")] = counts.get(p.get("status", "?"), 0) + 1
+    summary = " · ".join(f"{v} {escape(k.replace('_', ' '))}" for k, v in counts.items())
+    rows = []
+    for p in ps:
+        c = p.get("company") or {}
+        t = (p.get("triggers") or [None])[0]
+        trig = ""
+        if t:
+            src = (t.get("fact") or {}).get("sources") or [{}]
+            trig = (f"{escape(t.get('summary', ''))} <span class=muted>"
+                    f"({escape(str(t.get('event_date') or 'undated'))})</span> "
+                    + (_link(src[0].get("url", "")) if src[0].get("url", "").startswith("http")
+                       else ""))
+        fit = escape((p.get("route_fit") or {}).get("reason") or "")
+        b = p.get("buyer")
+        buyer = f"{escape(b['name'])}, {escape(b['title'])}" if b else ""
+        cv = "; ".join(escape(x.get("missing", "")) for x in p.get("cannot_verify") or [])
+        rows.append(
+            f"<tr><td><b>{escape(c.get('name', ''))}</b><br><span class=muted>"
+            f"{escape(c.get('industry') or '')}</span></td>"
+            f"<td><span class='st {escape(p.get('status', ''))}'>"
+            f"{escape((p.get('status') or '').replace('_', ' '))}</span><br>"
+            f"<span class=muted>{escape(p.get('reason') or '')}</span></td>"
+            f"<td>{trig}</td><td>{fit}</td><td>{buyer}</td>"
+            f"<td class=muted>{cv}</td></tr>")
+    notes = "".join(f"<li>{escape(n)}</li>" for n in res.get("notes", []))
+    return f"""<section class=card><h2>Result: {escape(res.get('status', ''))}</h2>
+<p>{summary or 'No companies found.'} · cost Rs {res.get('cost_inr', 0):.2f}</p>
+{"<ul class=muted>" + notes + "</ul>" if notes else ""}
+<div class=scroll><table class=result><tr><th>Company</th><th>Status and reason</th>
+<th>Trigger (source)</th><th>Route fit (estimate)</th><th>Buyer</th><th>Cannot verify</th></tr>
+{''.join(rows)}</table></div></section>"""
 
 
 CSS = """
@@ -323,6 +577,19 @@ button.link{border:0;background:none;color:var(--accent);padding:0}
 input,textarea{width:100%;font:inherit;padding:6px;margin:4px 0 12px;background:var(--bg);
 color:var(--fg);border:1px solid var(--line);border-radius:6px}
 textarea{font:13px/1.5 ui-monospace,Menlo,monospace}.bar{display:flex;gap:8px}
+textarea[name=prompt]{font:15px/1.5 system-ui,sans-serif}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0 16px}
+label.check{display:flex;gap:8px;align-items:center}label.check input{width:auto;margin:0}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.scroll{overflow-x:auto}.st{font-size:12px;border-radius:10px;padding:1px 8px;
+border:1px solid var(--line);white-space:nowrap}
+.st.awaiting_approval,.st.done,.st.sent{color:var(--ok);border-color:var(--ok)}
+.st.running{color:var(--accent);border-color:var(--accent)}
+.st.interrupted,.st.partial,.st.stopped_limit,.st.failed,.st.cannot_verify{color:var(--bad);
+border-color:var(--bad)}ul.log{list-style:none;padding-left:0;font-size:13px}
+.lvl{font-size:11px;text-transform:uppercase}.lvl.error{color:var(--bad)}
+details{margin:16px 0}summary{cursor:pointer}main{max-width:1150px}
 """
 
 
