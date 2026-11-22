@@ -1,74 +1,64 @@
-# ContextCon 05: Services, Replaced
+# ContextCon 05: Services, Replaced. Outbound SDR for a 3PL
 
-> **Team:** _name_ · **Track:** _TBD at kickoff_ · **Builders:** _4 names_
+> **Team:** _name_ · **Track:** Revenue · **Builders:** _4 names_
 
-This is our prep repo. **At kickoff we get an organizer repo, and all build commits must go there.** On day one, copy this repo's contents into it (see [docs/TEAM.md](docs/TEAM.md#kickoff-day-runbook)).
+The service books a first meeting between a 3PL's sales head and the right buyer at a company that has shown a real expansion trigger in the last 30 days and ships near a route where the 3PL has spare truck capacity. It does the whole sales development job, from the request to the sent invite. A person approves every email and invite before it goes out.
 
----
+This is our prep repo. **At kickoff, all build commits move to the organizer repo** ([docs/TEAM.md](docs/TEAM.md#kickoff-day-runbook)). Who builds what: [docs/WORKSTREAMS.md](docs/WORKSTREAMS.md). Full plan: [docs/PLAN.md](docs/PLAN.md).
 
-## Required README sections (the organizers check these at screening)
+## The job, and who pays for it today
+Outbound sales development for a 3PL: find, qualify and book meetings with new shippers. Today 3PLs pay lead-generation and SDR agencies (per meeting or a monthly retainer), or the salaries of an in-house SDR team.
 
-### The job, and who pays for it today
-_Example: "Outsourced payables firms are paid per invoice to pay each vendor invoice exactly once..."_
+## Input
+A request such as `"Book 5 meetings for the Pune to Mumbai route; spare capacity 12 trucks a week"`, plus the client's records: routes, spare capacity, current clients, rivals, do-not-contact list. Example: [evals/cases/fixture_hard_cases.json](evals/cases/fixture_hard_cases.json). _(Update to the kickoff-kit format.)_
 
-### Input
-_The kickoff kit's request format. Link to a sample in `evals/cases/`._
+## Finished result
+For each prospect: the trigger with its source and date, the route-fit reason, the buyer with their source, the approved email, and the sent invite (`.ics`). Otherwise a hold reason (lookalike, no verified buyer, ...) or **"cannot verify"** naming what is missing. Every fact links to the exact field or passage and the record's date.
 
-### Finished result
-_What the client gets at the end: posted entries, a cleared vendor with evidence, a booked meeting..._
+## Pass mark
+Each fact has a source. No trigger older than 30 days. No lookalike company or departed buyer is contacted. No action without approval. No duplicate email or invite after a restart. Each job stays under the cost limit (`config/service.yaml → limits.max_cost_inr`).
 
-### Pass mark
-_How we score a run: N/N hidden-style cases correct, 0 wrong answers ("cannot verify" is allowed), under ₹X and Y seconds per job._
-
-### Data sources the service calls
-| Source | What for | Live? | Cost per call |
+## Data sources the service calls
+| Source | Used for | Live? | Cost |
 |---|---|---|---|
-| Crustdata API | company / people / jobs | yes | _credits_ |
-| _e.g. MCA21 / GST registry_ | legal name, status | yes | free |
-| Anthropic Claude (`claude-opus-5-5`) | extraction, matching, explanations (never a source of facts) | n/a | per token |
+| Crustdata company identify / enrichment | identity, locations, funding | yes | _credits/call (smoke test)_ |
+| Crustdata job search | hiring triggers (posting date, location) | yes | _credits_ |
+| Crustdata web search + fetch | expansion news, exact passage | yes | _credits_ |
+| Crustdata person search / enrichment | buyer, current employer, role start | yes | _credits_ |
+| MCA / GST registry pages | legal name, principal place of business (fallback) | yes | free |
+| Company websites (careers, locations, press) | fallback triggers and locations | yes | free |
+| Client records (kickoff kit) | routes, capacity, clients, do-not-contact list | n/a | n/a |
+| Claude `claude-opus-5-5` / `claude-haiku-5-5` | request parsing fallback, optional email polish; **never a source of facts** | n/a | per token |
 
-### Architecture
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
-
----
+## Architecture
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): the ten steps, step log, outbox, approval queue, retries, cost ledger.
 
 ## Quickstart
-
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -e ".[dev]"
-copy .env.example .env   # then fill in the keys
-pytest
-python evals/run_evals.py
-python -m service.cli run evals/cases/example_bank_lines.json
+.\scripts\setup.ps1                 # venv + deps + .env + tests
+python evals\run_evals.py           # hard-case evals on fixtures (must show no WRONG)
+python -m service.cli run evals\cases\fixture_hard_cases.json
+python -m service.cli pending       # see drafts waiting for approval
+python -m service.cli approve <key> --by "Your Name"
+python -m service.cli run evals\cases\fixture_hard_cases.json   # sends approved ones, once
+python -m service.cli cost <job_id>
 ```
+Set `sources.mode: live` in `config/service.yaml` for real runs (screening and finals).
+
+**Kill test:** run a job, kill it partway through (`Ctrl+C` or Task Manager), then run the same command again. Finished steps load from their checkpoints, and each email and invite is in `data/outbox/` exactly once.
 
 ## Repo layout
-
 ```
-config/service.toml     every limit, price and output rule; edit this for the hour-3 change
+config/service.yaml        every rule and limit (hour-3 change and live fix = edits here)
 src/service/
-  pipeline.py           intake -> gather -> decide -> act -> report (fill in per track)
-  ledger.py             SQLite: step checkpoints, at-most-once actions, cost ledger, logs
-  evidence.py           Fact / Source / CannotVerify; a fact without a source fails to build
-  budget.py             per-run cost/time/call limits
-  llm.py                Claude wrapper that logs the cost of every call
-  sources/              live data clients (retry + cache + cost logging)
-  cli.py                run / pending / approve / reject / cost / logs
-evals/                  test cases (incl. hard cases) + scorer
-tests/                  unit tests for kill-safety and sourcing rules
-docs/                   problem statement, architecture, team plan, pitch prep
+  models.py                SHARED data contract (Prospect, Fact, Source, Trigger, Buyer, ...)
+  pipeline.py              runs steps 2-8 checkpointed, 9-10 idempotent
+  steps/s01..s10_*.py      one file per step, one owner each
+  sources/                 DataSources interface; fixtures.py (tests), live.py (Crustdata)
+  ledger.py                SQLite: step log, approval queue + outbox, cost ledger, events
+  mailer.py                .eml + .ics rendering, idempotent send
+  budget.py, llm.py, cli.py
+evals/                     hard-case eval cases + scorer (WRONG is worse than cannot verify)
+tests/                     unit + end-to-end tests, fixtures
+docs/                      plan, workstreams, architecture, checklist, pitch, problem statement
 ```
-
-## Operating the service
-
-| Command | What it does |
-|---|---|
-| `python -m service.cli run <file>` | Runs a request. Running it again resumes the run; nothing happens twice |
-| `python -m service.cli pending` | Lists actions waiting for a person's approval |
-| `python -m service.cli approve <key> --by NAME` | Approves one action, then re-run to carry it out |
-| `python -m service.cli cost <run_id>` | Cost breakdown per provider and operation |
-| `python -m service.cli logs <run_id>` | The run's event log |
-
-**Kill test:** start a run, press `Ctrl+C` partway through, run the same command again. Finished steps load from their checkpoints and actions that already ran are skipped.

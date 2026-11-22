@@ -25,9 +25,9 @@ def client():
 
 
 def price_usd(model: str, usage) -> float:
-    p = settings()["llm"]["pricing"].get(model)
+    p = settings()["llm"]["pricing_usd_per_mtok"].get(model)
     if p is None:
-        raise KeyError(f"No pricing for {model} in config/service.toml - add it")
+        raise KeyError(f"No pricing for {model} in config/service.yaml - add it")
     cache_read_rate = p.get("cache_read", p["input"] * 0.1)
     cache_write_rate = p["input"] * 1.25
     return (

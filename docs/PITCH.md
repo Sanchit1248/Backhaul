@@ -13,9 +13,9 @@ Half the finals points come from these two judges. Fill this in as we build.
 | Jobs per month at the client → monthly revenue | |
 | Why a firm would switch (speed, accuracy, audit trail) | |
 
-Get cost per job from the ledger: run all evals, sum `costs.cost_usd` per run, convert with `fx.usd_to_inr` in config.
+Get cost per job from the ledger: `python -m service.cli cost <job_id>` prints USD and rupees (rate: `costs.usd_to_inr` in config/service.yaml). Cost per meeting = job cost / meetings sent.
 
-## Ethics
+## Ethics (draft answers in docs/PLAN.md and the team doc)
 | Question | Answer |
 |---|---|
 | What personal data do we touch? (names, phone, PAN, bank details...) | |

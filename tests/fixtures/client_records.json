@@ -1,0 +1,11 @@
+{
+  "_note": "TEST FIXTURE. Fictional client records in our own format. Replace with the kickoff-kit records (adapt steps/s01_intake.load_client_records).",
+  "name": "Fixture Logistics Pvt Ltd",
+  "routes": [
+    {"origin": "pune", "destination": "mumbai", "spare_trucks_per_week": 12},
+    {"origin": "nashik", "destination": "mumbai", "spare_trucks_per_week": 6}
+  ],
+  "current_clients": ["Mahalaxmi Textiles", "mahalaxmitextiles.example"],
+  "rivals": ["Rival Freight Lines"],
+  "do_not_contact": ["konkanretail.example"]
+}

@@ -2,8 +2,8 @@
 action happens exactly once."""
 import pytest
 
-from service.evidence import Fact, Source
 from service.ledger import Ledger, idem_key
+from service.models import Fact, Source
 
 
 @pytest.fixture

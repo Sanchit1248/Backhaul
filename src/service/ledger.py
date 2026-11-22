@@ -191,6 +191,38 @@ class Ledger:
         return [{"key": k, "run_id": r, "kind": kd, "payload": json.loads(p)}
                 for k, r, kd, p in rows]
 
+    def request_approval(self, run_id: str, kind: str, key: str, payload: dict) -> str:
+        """Queue an irreversible action for a person (no-op if already queued).
+        Returns the current status of that action."""
+        self.db.execute(
+            "INSERT OR IGNORE INTO actions VALUES (?,?,?,?,'pending_approval',NULL,NULL,?)",
+            (key, run_id, kind, json.dumps(payload, default=str), time.time()),
+        )
+        return self.get_action(key)["status"]
+
+    def get_action(self, key: str) -> dict | None:
+        row = self.db.execute(
+            "SELECT idem_key, run_id, kind, payload, status, result, approved_by"
+            " FROM actions WHERE idem_key=?", (key,)).fetchone()
+        if not row:
+            return None
+        k, r, kd, p, st, res, by = row
+        return {"key": k, "run_id": r, "kind": kd, "payload": json.loads(p), "status": st,
+                "result": json.loads(res) if res else None, "approved_by": by}
+
+    def update_payload(self, key: str, payload: dict, by: str) -> None:
+        """Approver edited the draft. Only allowed before it is sent."""
+        cur = self.db.execute(
+            "UPDATE actions SET payload=?, approved_by=?, updated_at=? WHERE idem_key=?"
+            " AND status IN ('pending_approval','approved')",
+            (json.dumps(payload, default=str), by, time.time(), key))
+        if cur.rowcount != 1:
+            raise ValueError(f"action {key} cannot be edited (missing or already sent)")
+
+    def actions_for_run(self, run_id: str) -> list[dict]:
+        keys = self.db.execute("SELECT idem_key FROM actions WHERE run_id=?", (run_id,))
+        return [self.get_action(k) for (k,) in keys.fetchall()]
+
     # ---- cost ledger ----------------------------------------------------
     def cost(self, run_id: str, provider: str, op: str, cost_usd: float,
              units: dict | None = None, ms: int | None = None) -> None:

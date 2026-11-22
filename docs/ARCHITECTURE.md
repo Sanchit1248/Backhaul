@@ -1,52 +1,63 @@
 # Architecture
 
-Required deliverable: show the components, the data flow, and **where the data calls, approvals, retries and the cost ledger sit**. Update this diagram once the track is chosen. GitHub renders Mermaid natively.
+One Python worker takes a request through ten steps. Steps 2–8 each save their output to the step log before the next starts. Every irreversible action goes through one approval queue and outbox. A kill at any moment loses no finished work and repeats no action.
 
 ```mermaid
-flowchart LR
-    REQ[/Client request<br/>kickoff-kit format/] --> CLI[CLI / API entry<br/>run_id = hash of request]
-    CLI --> P
+flowchart TB
+    REQ[/"Request + client records<br/>(kickoff kit)"/] --> S1
 
-    subgraph P[Pipeline: each step checkpointed]
+    subgraph PIPE["Pipeline: steps 2-8 checkpointed in the step log"]
         direction LR
-        I[intake] --> G[gather] --> D[decide] --> A[act] --> R[report]
+        S1[1 Intake] --> S2[2 Discover] --> S3[3 Resolve identity] --> S4[4 Check triggers]
+        S4 --> S5[5 Route fit] --> S6[6 Exclude] --> S7[7 Find buyer] --> S8[8 Draft]
     end
 
-    G -- "fetch_json<br/>retry + backoff + cache" --> SRC[(Live sources<br/>Crustdata · registries · web)]
-    D -- "extract / match / explain" --> LLM[(Claude API)]
-    D -->|no source settles it| CV[cannot verify<br/>+ what is missing]
+    S8 --> S9[9 Approval queue]
+    S9 --> HUMAN((Approver<br/>web page / CLI))
+    HUMAN -- approve / edit / reject --> S9
+    S9 --> S10[10 Send once]
+    S10 --> OUT[/"Email + .ics invite<br/>final report with evidence + cost"/]
 
-    A --> GATE{irreversible?}
-    GATE -- no --> FX[perform once<br/>idempotency key]
-    GATE -- yes --> Q[[Approval queue]] --> HUMAN((Person)) --> FX
-    FX --> PAY[(Razorpay / Stripe<br/>TEST mode, email, calendar)]
+    S2 & S3 & S4 & S5 & S7 -- "DataSources" --> FJ["fetch_json<br/>retry 429/5xx, backoff<br/>response cache"]
+    FJ --> CD[(Crustdata API)]
+    FJ --> WEB[(Web fetch · MCA/GST)]
+    S8 -. optional polish .-> LLM[(Claude API)]
 
-    subgraph L[SQLite ledger: survives kill -9]
-        ST[steps<br/>checkpoints]
-        AC[actions<br/>at-most-once]
-        CO[costs<br/>per call]
-        EV[events<br/>log]
+    S3 -- close matches --> HOLD1[hold: lookalike]
+    S4 -- undated --> CV[cannot verify]
+    S4 -- older than 30 days --> DROP[drop]
+    S6 -- client / rival / DNC --> EXC[exclude]
+    S7 -- buyer left, name-only --> HOLD2[hold: no verified buyer]
+
+    subgraph STORE["SQLite ledger"]
+        SL[(step log)]
+        OB[("approval queue + outbox<br/>key = hash(job, prospect, action)")]
+        CL[(cost ledger)]
+        EV[(evidence + events)]
     end
-    P -.-> ST
-    FX -.-> AC
-    SRC -.-> CO
-    LLM -.-> CO
-    BUD[Budget guard<br/>cost / time / calls] -.checks.-> CO
-    R --> OUT[/Result: every fact linked to<br/>source URL + exact field + record date/]
+    PIPE -.-> SL
+    S9 -.-> OB
+    S10 -.-> OB
+    FJ -.-> CL
+    LLM -.-> CL
+    BUD{{"Budget check<br/>before each paid call"}} -.-> CL
+    CFG[["config/service.yaml<br/>window, weights, titles,<br/>limits, template"]] -.-> PIPE
 ```
 
-## How each judged property is met
-
+## Where each judged property is met
 | Property | Mechanism | Code |
 |---|---|---|
-| Each claim has a source | `Fact` won't construct without a `Source` that has an excerpt | `evidence.py` |
-| "Cannot verify" instead of guessing | `decide` emits `CannotVerify(missing=...)` when no record settles it | `pipeline.py` |
-| Approval before irreversible actions | `approval.irreversible` in config → `pending_approval` until `cli approve` | `ledger.action` |
-| Kill on stage, each action once | step checkpoints + idempotency key passed to the provider as well | `ledger.py` |
+| Each fact has a source | `Fact` requires ≥1 `Source` with a non-empty excerpt and record date | `models.py` |
+| Cannot verify, never guess | undated trigger, low-confidence identity, failed source → `CannotVerify` | `steps/s03`, `s04` |
+| No lookalikes | identify top-2 gap, domain check | `steps/s03_identity.py` |
+| No departed or same-name buyer | role end date, employer id must equal company id | `steps/s07_buyer.py` |
+| Approval before email/invite | `ledger.request_approval` → person → `decide` / `update_payload` | `steps/s09_approve.py` |
+| Each action once after a kill | outbox row with unique key; `started` → provider check → `done`; atomic file write | `steps/s10_send.py`, `mailer.py` |
+| Restart resumes | step log per (job, step) | `ledger.step`, `pipeline.py` |
 | Sources fail | retry with backoff, then `SourceUnavailable` → cannot verify | `sources/base.py` |
-| Time and cost limits | `Budget.check()` before every paid call; every call logged | `budget.py`, `costs` table |
-| Requirement change at hour 3 | limits, required fields and prices live in `config/service.toml` | config |
+| Cost limit, cost per call | `Budget.check()` before each paid call; every call is a cost row | `budget.py`, `ledger.costs` |
+| Hour-3 change, live fix | rules in one YAML file | `config/service.yaml` |
 
-## Scaling answers (system design question)
-- **100× volume:** move from SQLite to Postgres (same schema), run the pipeline per item on a queue (e.g. Redis/RQ or Celery), cache source lookups per entity, batch LLM calls through the Batch API at half price.
-- **Second client:** add `client_id` to every table and config profile; keep per-client records and approval rules separate.
+## Design question answers
+- **100× volume:** several workers on a shared queue, Postgres instead of SQLite (same tables), Crustdata batch APIs, the response cache, and per-key rate limits.
+- **A second client:** a `client_id` on every table, plus its own config file, budget and do-not-contact list.

@@ -1,0 +1,88 @@
+# ALL rules and tunables. The hour-3 requirement change and the finals live fix
+# should be edits to THIS file. Owner: B (pipeline). Anyone may edit with a heads-up.
+
+client:
+  records_file: tests/fixtures/client_records.json   # replace with kickoff-kit records
+
+sources:
+  mode: fixtures            # fixtures | live   (live = Crustdata + web, owner A)
+  fixtures_file: tests/fixtures/sources_basic.json
+
+limits:
+  max_cost_inr: 150         # per job; budget check before every paid call
+  max_seconds: 600
+  max_llm_calls: 60
+  max_candidates: 40        # discovery page cap (cheap filters first)
+
+triggers:
+  window_days: 30           # trigger must be within request_date - window_days
+  dedupe_days: 3            # same company + type within N days = same event
+  weights: {hiring: 1.0, expansion: 1.5, funding: 1.2}
+  ignore_types: [layoffs, downsizing]
+
+identity:
+  lookalike_gap: 0.10       # top-2 identify scores closer than this -> hold as lookalike
+  min_score: 0.60
+
+route_fit:
+  full_score: 1.0
+  partial_score: 0.4        # only HQ/office known, or city near but not on route
+  min_score_to_contact: 0.4
+
+buyer:
+  titles:
+    - head of supply chain
+    - vp supply chain
+    - head of logistics
+    - logistics manager
+    - director operations
+    - head of operations
+    - chief operating officer
+  max_candidates: 3
+
+discovery:
+  industries: [manufacturing, fmcg, automotive, pharmaceuticals, chemicals, e-commerce, retail]
+  headcount_min: 200
+  headcount_max: 5000
+
+email:
+  sender_name: "Sales Head, {client_name}"
+  subject: "{client_name}: spare truck capacity on {route}"
+  template: |
+    Hi {buyer_first_name},
+
+    I lead sales at {client_name}, a third-party logistics company. I noticed {trigger_sentence} [1].
+    {route_sentence} [2]
+
+    We have {spare_trucks} trucks a week free on that lane. Would a 20-minute call next week help?
+
+    {sender_name}
+
+    Sources: {source_list}
+    If you would rather not hear from us, reply "unsubscribe" and we will not contact you again.
+  meeting_minutes: 20
+  mailer: file              # file (writes .eml/.ics to data/outbox) | smtp (test inbox only)
+
+approval:
+  irreversible: [send_email, send_invite]
+
+privacy:
+  person_fields: [name, title, employer, role_start, role_end, business_email]
+  retention_days: 30
+  mask_in_logs: true
+
+output:
+  required_fields: [status, prospects, cost_inr]
+
+llm:
+  model: claude-opus-5-5
+  cheap_model: claude-haiku-5-5
+  effort: medium
+  pricing_usd_per_mtok:     # Anthropic first-party, checked 2026-11-22
+    claude-opus-5-5: {input: 4.00, output: 20.00, cache_read: 0.20}
+    claude-sonnet-5-5: {input: 2.00, output: 10.00, cache_read: 0.10}
+    claude-haiku-5-5: {input: 0.10, output: 0.50}
+
+costs:
+  usd_to_inr: 84.0
+  crustdata_inr_per_credit: 0.0   # TODO(A): from Crustdata pricing / smoke test

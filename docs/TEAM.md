@@ -1,14 +1,7 @@
 # Team plan
 
-## Roles (4 builders)
-| Role | Owns | Files |
-|---|---|---|
-| **A: Pipeline lead** | request → result logic, decide step, output format, hour-3 change | `pipeline.py`, `config/` |
-| **B: Data sources** | Crustdata + registries + web; parsing; Source citations | `sources/` |
-| **C: Reliability & evals** | kill/restart, approvals, test cases incl. hard cases, eval scoring | `ledger.py`, `evals/`, `tests/` |
-| **D: Product & pitch** | README sections, architecture diagram, ethics + finance story, demo script, screening Q&A | `README.md`, `docs/` |
-
-Anyone can pick up anything, but **one owner per file at a time** to avoid merge pain.
+## Roles
+See [WORKSTREAMS.md](WORKSTREAMS.md): A data, B pipeline & outbox, C email & approval, D rules, evals & story. One owner per file; each person runs their own Claude Code session with the starter prompt there.
 
 ## Git workflow (7-hour build: keep it light)
 - `main` must always run. Before every push: `pytest` + `python evals/run_evals.py`.
@@ -19,9 +12,9 @@ Anyone can pick up anything, but **one owner per file at a time** to avoid merge
 
 ## Kickoff-day runbook
 1. Clone the organizer repo. Copy this repo's contents into it, except `.git/`. Commit: `chore: import team starter`.
-2. Read the client name, records and request formats from the kickoff kit. Put the records in `data/client/` (gitignored) or `fixtures/` if they're allowed to be committed.
-3. Choose the track (see below). Fill in the README's required sections in draft form.
-4. Write 3–5 eval cases for that track now, including a duplicate, a lookalike name and a cannot-verify case. **Open track: 3 cases with answers are due by 11:00 AM.**
+2. Read the client name, records and request formats from the kickoff kit. B maps them in `steps/s01_intake.py`; point `client.records_file` in config at them.
+3. Track is decided (Revenue: outbound SDR, see [PLAN.md](PLAN.md)). Check the kickoff request type matches our discovery flow; if it is inbound-lead routing, regroup for 15 minutes.
+4. D writes 5+ eval cases from kickoff data (lookalike, old trigger, departed buyer, DNC, undated news).
 5. Build the pipeline end to end with one live source first, then widen.
 
 ## Timeline (7 h build)

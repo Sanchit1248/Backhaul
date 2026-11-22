@@ -1,0 +1,89 @@
+{
+  "_note": "TEST FIXTURE: fictional companies (.example domains), one per hard case in the plan. Request date for these cases: 2026-11-20. Never used in live mode.",
+  "discover": [
+    {"name": "Kaveri Agro Foods", "domain": "kaveriagro.example"},
+    {"name": "Sahyadri Auto Components", "domain": "sahyadriauto.example"},
+    {"name": "Shree Polymers", "domain": null},
+    {"name": "Deccan Pharma", "domain": "deccanpharma.example"},
+    {"name": "Konkan Retail", "domain": "konkanretail.example"},
+    {"name": "Indus Chem", "domain": "induschem.example"},
+    {"name": "Vidarbha Steel", "domain": "vidarbhasteel.example"}
+  ],
+  "companies": {
+    "Kaveri Agro Foods": {
+      "_case": "happy path + same event in two sources (count once, keep both)",
+      "identify": [{"score": 0.95, "company": {"name": "Kaveri Agro Foods Pvt Ltd", "domain": "kaveriagro.example", "crustdata_id": "cd-1001", "industry": "fmcg", "headcount": 850}}],
+      "locations": [{"city": "pune", "kind": "plant", "source": {"url": "https://api.crustdata.example/company/cd-1001", "kind": "api_response", "excerpt": "locations[0] = {city: Pune, type: plant}", "field_path": "locations[0]", "record_date": "2026-11-01"}}],
+      "triggers": [
+        {"type": "hiring", "summary": "Logistics Manager job posted in Pune", "event_date": "2026-11-10",
+         "fact": {"claim": "Kaveri Agro Foods posted a Logistics Manager job in Pune on 10 Nov 2026", "sources": [{"url": "https://api.crustdata.example/jobs/j-501", "kind": "api_response", "excerpt": "title = Logistics Manager; location = Pune; date_posted = 2026-11-10", "field_path": "job", "record_date": "2026-11-10"}]}},
+        {"type": "hiring", "summary": "Logistics Manager opening on careers page", "event_date": "2026-11-12",
+         "fact": {"claim": "Kaveri Agro Foods careers page lists a Logistics Manager opening in Pune", "sources": [{"url": "https://kaveriagro.example/careers/logistics-manager", "kind": "web_page", "excerpt": "Logistics Manager - Pune plant. Posted 12 November 2026.", "record_date": "2026-11-12"}]}}
+      ],
+      "people": [{"name": "Anita Rao", "title": "Head of Supply Chain", "person_id": "p-1", "employer_id": "cd-1001", "employer_name": "Kaveri Agro Foods Pvt Ltd", "role_start": "2023-04-01", "business_email": "anita.rao@kaveriagro.example", "profile_url": "https://api.crustdata.example/person/p-1"}]
+    },
+    "Sahyadri Auto Components": {
+      "_case": "only trigger is 45 days old -> dropped",
+      "identify": [{"score": 0.93, "company": {"name": "Sahyadri Auto Components Ltd", "domain": "sahyadriauto.example", "crustdata_id": "cd-1002", "industry": "automotive", "headcount": 1200}}],
+      "locations": [{"city": "nashik", "kind": "plant", "source": {"url": "https://api.crustdata.example/company/cd-1002", "kind": "api_response", "excerpt": "locations[0] = {city: Nashik, type: plant}", "record_date": "2026-10-20"}}],
+      "triggers": [
+        {"type": "hiring", "summary": "Warehouse Supervisor job", "event_date": "2026-10-06",
+         "fact": {"claim": "Sahyadri Auto posted a Warehouse Supervisor job on 6 Oct 2026", "sources": [{"url": "https://api.crustdata.example/jobs/j-777", "kind": "api_response", "excerpt": "title = Warehouse Supervisor; date_posted = 2026-10-06", "record_date": "2026-10-06"}]}}
+      ],
+      "people": []
+    },
+    "Shree Polymers": {
+      "_case": "name matches two companies -> hold lookalike",
+      "identify": [
+        {"score": 0.82, "company": {"name": "Shree Polymers Pvt Ltd", "domain": "shreepolymers.example", "crustdata_id": "cd-1003a"}},
+        {"score": 0.78, "company": {"name": "Shree Polymer Industries", "domain": "shreepolymerind.example", "crustdata_id": "cd-1003b"}}
+      ]
+    },
+    "Deccan Pharma": {
+      "_case": "first buyer has left -> use next verified buyer",
+      "identify": [{"score": 0.97, "company": {"name": "Deccan Pharma Ltd", "domain": "deccanpharma.example", "crustdata_id": "cd-1004", "industry": "pharmaceuticals", "headcount": 2100}}],
+      "locations": [{"city": "nashik", "kind": "warehouse", "source": {"url": "https://deccanpharma.example/locations", "kind": "web_page", "excerpt": "Distribution warehouse: Ambad MIDC, Nashik", "record_date": "2026-09-30"}}],
+      "triggers": [
+        {"type": "expansion", "summary": "New warehouse in Nashik announced", "event_date": "2026-11-05",
+         "fact": {"claim": "Deccan Pharma announced a new warehouse in Nashik on 5 Nov 2026", "sources": [{"url": "https://news.example/deccan-pharma-nashik-warehouse", "kind": "web_page", "excerpt": "Deccan Pharma on Wednesday said it will open a 2 lakh sq ft warehouse in Nashik.", "record_date": "2026-11-05"}]}}
+      ],
+      "people": [
+        {"name": "Rahul Mehta", "title": "VP Supply Chain", "person_id": "p-2", "employer_id": "cd-1004", "role_start": "2021-01-01", "business_email": "rahul.mehta@deccanpharma.example"},
+        {"name": "Priya Nair", "title": "Head of Logistics", "person_id": "p-3", "employer_id": "cd-1004", "employer_name": "Deccan Pharma Ltd", "role_start": "2024-06-01", "business_email": "priya.nair@deccanpharma.example"}
+      ]
+    },
+    "Konkan Retail": {
+      "_case": "on do-not-contact list -> excluded",
+      "identify": [{"score": 0.96, "company": {"name": "Konkan Retail Pvt Ltd", "domain": "konkanretail.example", "crustdata_id": "cd-1005"}}],
+      "locations": [{"city": "pune", "kind": "warehouse", "source": {"url": "https://api.crustdata.example/company/cd-1005", "kind": "api_response", "excerpt": "locations[0] = {city: Pune, type: warehouse}", "record_date": "2026-11-01"}}],
+      "triggers": [
+        {"type": "funding", "summary": "Series B", "event_date": "2026-11-15",
+         "fact": {"claim": "Konkan Retail raised a Series B on 15 Nov 2026", "sources": [{"url": "https://api.crustdata.example/company/cd-1005/funding", "kind": "api_response", "excerpt": "funding_rounds[0] = {type: Series B, date: 2026-11-15}", "record_date": "2026-11-15"}]}}
+      ],
+      "people": [{"name": "Vikram Shah", "title": "Head of Operations", "person_id": "p-4", "employer_id": "cd-1005", "role_start": "2022-01-01", "business_email": "vikram@konkanretail.example"}]
+    },
+    "Indus Chem": {
+      "_case": "expansion news with no date -> cannot verify the trigger",
+      "identify": [{"score": 0.94, "company": {"name": "Indus Chem Ltd", "domain": "induschem.example", "crustdata_id": "cd-1006"}}],
+      "locations": [{"city": "pune", "kind": "plant", "source": {"url": "https://api.crustdata.example/company/cd-1006", "kind": "api_response", "excerpt": "locations[0] = {city: Pune, type: plant}", "record_date": "2026-11-01"}}],
+      "triggers": [
+        {"type": "expansion", "summary": "Plans a second plant", "event_date": null,
+         "fact": {"claim": "Indus Chem plans a second plant near Pune", "sources": [{"url": "https://induschem.example/press", "kind": "web_page", "excerpt": "Indus Chem plans to set up a second plant near Pune."}]}}
+      ],
+      "people": [{"name": "Sunil Joshi", "title": "Director Operations", "person_id": "p-5", "employer_id": "cd-1006", "role_start": "2020-01-01", "business_email": "sunil.joshi@induschem.example"}]
+    },
+    "Vidarbha Steel": {
+      "_case": "person with the same name at another company -> not a match -> hold no verified buyer; HQ only -> partial fit",
+      "identify": [{"score": 0.91, "company": {"name": "Vidarbha Steel Ltd", "domain": "vidarbhasteel.example", "crustdata_id": "cd-1007"}}],
+      "locations": [{"city": "pune", "kind": "hq", "source": {"url": "https://api.crustdata.example/company/cd-1007", "kind": "api_response", "excerpt": "hq_city = Pune", "field_path": "hq_city", "record_date": "2026-11-01"}}],
+      "triggers": [
+        {"type": "funding", "summary": "Debt raise", "event_date": "2026-11-01",
+         "fact": {"claim": "Vidarbha Steel raised debt funding on 1 Nov 2026", "sources": [{"url": "https://api.crustdata.example/company/cd-1007/funding", "kind": "api_response", "excerpt": "funding_rounds[0] = {type: Debt, date: 2026-11-01}", "record_date": "2026-11-01"}]}}
+      ],
+      "people": [{"name": "Arjun Singh", "title": "Head of Supply Chain", "person_id": "p-6", "employer_id": "cd-8888", "employer_name": "Vidarbha Steel Traders", "role_start": "2019-01-01"}]
+    }
+  },
+  "employment_updates": {
+    "p-2": {"employer_id": "cd-2020", "employer_name": "Other Pharma Co", "role_end": "2026-10-15"}
+  }
+}

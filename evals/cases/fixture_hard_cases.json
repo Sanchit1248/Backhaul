@@ -1,0 +1,20 @@
+{
+  "id": "fixture_hard_cases",
+  "sources": "fixtures",
+  "fixtures_file": "tests/fixtures/sources_basic.json",
+  "note": "One prospect per hard case from the plan. Fixture data, so it tests our rules, not live coverage. D: add live cases (records dated after 1 Sep 2026) once the smoke test shows what Crustdata returns.",
+  "request": {
+    "job_id": "eval-fixture-hard-cases",
+    "text": "Book 5 meetings for the Pune to Mumbai route; spare capacity 12 trucks a week",
+    "request_date": "2026-11-20"
+  },
+  "expected": {
+    "Kaveri Agro Foods Pvt Ltd": {"status": "awaiting_approval", "buyer": "Anita Rao"},
+    "Sahyadri Auto Components Ltd": {"status": "dropped"},
+    "Shree Polymers": {"status": "held", "reason_contains": "lookalike"},
+    "Deccan Pharma Ltd": {"status": "awaiting_approval", "buyer": "Priya Nair"},
+    "Konkan Retail Pvt Ltd": {"status": "excluded", "reason_contains": "do-not-contact"},
+    "Indus Chem Ltd": {"status": "cannot_verify"},
+    "Vidarbha Steel Ltd": {"status": "held", "reason_contains": "no verified buyer"}
+  }
+}

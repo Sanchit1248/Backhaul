@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from ..budget import Budget
 from ..config import env
-from ..evidence import Source
 from ..ledger import Ledger
+from ..models import Source
 from .base import fetch_json
 
 BASE_URL = env("CRUSTDATA_BASE_URL", "https://api.crustdata.com")
