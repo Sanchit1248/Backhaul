@@ -28,6 +28,26 @@ route_fit:
   full_score: 1.0
   partial_score: 0.4        # only HQ/office known, or city near but not on route
   min_score_to_contact: 0.4
+  nearby_score: 0.7         # plant/warehouse in a satellite town of a route end point
+  # satellite town -> route end point it feeds (industrial belts). Extend from kickoff routes.
+  nearby:
+    chakan: pune
+    talegaon: pune
+    ranjangaon: pune
+    pimpri: pune
+    chinchwad: pune
+    hinjewadi: pune
+    shirwal: pune
+    bhiwandi: mumbai
+    thane: mumbai
+    navi mumbai: mumbai
+    taloja: mumbai
+    vasai: mumbai
+    palghar: mumbai
+    panvel: mumbai
+    sinnar: nashik
+    igatpuri: nashik
+    ambad: nashik
 
 buyer:
   titles:

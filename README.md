@@ -47,6 +47,12 @@ Set `sources.mode: live` in `config/service.yaml` for real runs (screening and f
 
 **Kill test:** run a job, kill it partway through (`Ctrl+C` or Task Manager), then run the same command again. Finished steps load from their checkpoints, and each email and invite is in `data/outbox/` exactly once.
 
+**Kill at an exact point (rehearsal):** set `SERVICE_CRASH_AT` and the process hard-exits there, then run again without it. Points: `after:02_discover` … `after:08_draft`, `before_send`, `after_send`. `tests/test_kill.py` does this for every point.
+```powershell
+$env:SERVICE_CRASH_AT="after_send"; python -m service.cli run evals\cases\fixture_hard_cases.json
+Remove-Item Env:SERVICE_CRASH_AT;   python -m service.cli run evals\cases\fixture_hard_cases.json
+```
+
 ## Repo layout
 ```
 config/service.yaml        every rule and limit (hour-3 change and live fix = edits here)

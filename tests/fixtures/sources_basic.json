@@ -40,9 +40,9 @@
       ]
     },
     "Deccan Pharma": {
-      "_case": "first buyer has left -> use next verified buyer",
+      "_case": "first buyer has left -> use next verified buyer; warehouse in satellite town -> partial fit",
       "identify": [{"score": 0.97, "company": {"name": "Deccan Pharma Ltd", "domain": "deccanpharma.example", "crustdata_id": "cd-1004", "industry": "pharmaceuticals", "headcount": 2100}}],
-      "locations": [{"city": "nashik", "kind": "warehouse", "source": {"url": "https://deccanpharma.example/locations", "kind": "web_page", "excerpt": "Distribution warehouse: Ambad MIDC, Nashik", "record_date": "2026-09-30"}}],
+      "locations": [{"city": "chakan", "kind": "warehouse", "source": {"url": "https://deccanpharma.example/locations", "kind": "web_page", "excerpt": "Distribution warehouse: Chakan MIDC, Pune district", "record_date": "2026-09-30"}}],
       "triggers": [
         {"type": "expansion", "summary": "New warehouse in Nashik announced", "event_date": "2026-11-05",
          "fact": {"claim": "Deccan Pharma announced a new warehouse in Nashik on 5 Nov 2026", "sources": [{"url": "https://news.example/deccan-pharma-nashik-warehouse", "kind": "web_page", "excerpt": "Deccan Pharma on Wednesday said it will open a 2 lakh sq ft warehouse in Nashik.", "record_date": "2026-11-05"}]}}
