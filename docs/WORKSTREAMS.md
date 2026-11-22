@@ -20,11 +20,16 @@ test with no Crustdata credits while A builds the live data layer.
 Shared files (`models.py`, `sources/__init__.py`, `steps/__init__.py`): change only after
 saying so in team chat, in a small PR on its own, merged first.
 
-## How to run 4 Claude sessions in parallel
-1. Each person: their own clone, their own branch `<initial>/<thing>`, Claude Code opened in the repo root.
+## How to run 4 Claude sessions in parallel (live build)
+1. Each person: their own clone, **on `main`**, Claude Code opened in the repo root.
+   Start a new Claude session after pulling this, so the sync hook loads.
 2. Paste your starter prompt below as the first message. It tells Claude which files it owns.
-3. Merge to `main` every 45–60 min: `git pull --rebase origin main`, then `pytest` and
-   `python evals/run_evals.py` (must show no WRONG), then push and open a quick PR (or push to main if the team agrees).
+3. **Pulling is automatic**: before every prompt, the hook in `.claude/settings.json` merges
+   origin/main into your clone (uncommitted work is stashed and re-applied; on a conflict
+   it aborts and says which file). Optional, for when you're not prompting:
+   `python scripts/sync.py --watch 60` in a spare terminal.
+4. **Pushing is per change**: your Claude commits your own files and pushes to `main` as soon
+   as tests + evals pass (rules in CLAUDE.md). Small pushes every few minutes = no big conflicts.
 4. Start a fresh Claude session for each new task rather than one giant conversation; it
    burns less of your Pro usage and keeps context sharp. Use the strongest model for
    rule/matching logic, a faster one for plumbing.

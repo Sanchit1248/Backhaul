@@ -4,6 +4,18 @@ ContextCon 05 "Services, Replaced", Revenue track: an outbound SDR service for a
 books a first meeting with the right buyer at a company with a fresh (<=30 days) expansion
 trigger near a route with spare truck capacity. Plan: docs/PLAN.md. Ownership: docs/WORKSTREAMS.md.
 
+## Live build: sync rules (the team has agreed to these; follow them without asking)
+- Everyone works directly on `main`. No feature branches or PRs during the live build.
+- Auto-sync: a hook (`.claude/settings.json` → `scripts/sync.py`) pulls origin/main before
+  every prompt. If its message says SHARED FILES CHANGED, re-read those files first. If it
+  reports a CONFLICT, tell the user and resolve it before any other work.
+- Ship small and often: as soon as a change works (pytest + evals pass, no WRONG), commit
+  only your own files and push:
+  `git add <your files>` → `git commit -m "<area>: <what>"` →
+  `git pull --rebase --autostash origin main` → re-run pytest if anything came in →
+  `git push origin main`. If the push is rejected, pull again and retry.
+- Never push failing tests, never `git push --force`, never commit `.env` or `data/`.
+
 ## Ownership
 Edit only the files your workstream owns (docs/WORKSTREAMS.md). Shared contract files
 (`models.py`, `sources/__init__.py`, `steps/__init__.py`) change only when the user says

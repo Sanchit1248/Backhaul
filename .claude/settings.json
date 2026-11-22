@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python scripts/sync.py --hook",
+            "timeout": 90,
+            "statusMessage": "Syncing with origin/main..."
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python scripts/sync.py --hook",
+            "timeout": 90,
+            "statusMessage": "Syncing with origin/main..."
+          }
+        ]
+      }
+    ]
+  }
+}
