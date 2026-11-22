@@ -127,7 +127,22 @@
      "employer_name": "Godavari Foods Pvt Ltd",
      "role_start": "2023-01-01",
      "profile_url": "https://api.crustdata.example/person/p-21",
-     "business_email": "sameer.kale@godavarifoods.example"
+     "business_email": "sameer.kale@godavarifoods.example",
+     "facts": [
+      {
+       "claim": "Fixture employment recheck: Sameer Kale still holds Head of Supply Chain at employer cd-2001",
+       "value": "indexed: current role rechecked (person_enrich)",
+       "sources": [
+        {
+         "url": "https://api.crustdata.example/person/p-21",
+         "kind": "api_response",
+         "excerpt": "employment.current[0] = {employer_id: cd-2001, title: Head of Supply Chain, start_date: 2023-01-01, end_date: null}",
+         "record_date": "2026-11-15",
+         "field_path": "employment.current[0]"
+        }
+       ]
+      }
+     ]
     }
    ]
   },
@@ -219,7 +234,22 @@
      "employer_name": "Malwa Textiles Ltd",
      "role_start": "2023-01-01",
      "profile_url": "https://api.crustdata.example/person/p-22",
-     "business_email": "meera.kulkarni@malwatextiles.example"
+     "business_email": "meera.kulkarni@malwatextiles.example",
+     "facts": [
+      {
+       "claim": "Fixture employment recheck: Meera Kulkarni still holds Head of Logistics at employer cd-2002",
+       "value": "indexed: current role rechecked (person_enrich)",
+       "sources": [
+        {
+         "url": "https://api.crustdata.example/person/p-22",
+         "kind": "api_response",
+         "excerpt": "employment.current[0] = {employer_id: cd-2002, title: Head of Logistics, start_date: 2023-01-01, end_date: null}",
+         "record_date": "2026-11-15",
+         "field_path": "employment.current[0]"
+        }
+       ]
+      }
+     ]
     }
    ]
   },
@@ -295,7 +325,22 @@
      "employer_name": "Ratnagiri Foods Pvt Ltd",
      "role_start": "2023-01-01",
      "profile_url": "https://api.crustdata.example/person/p-23",
-     "business_email": "farhan.qureshi@ratnagirifoods.example"
+     "business_email": "farhan.qureshi@ratnagirifoods.example",
+     "facts": [
+      {
+       "claim": "Fixture employment recheck: Farhan Qureshi still holds VP Supply Chain at employer cd-2003",
+       "value": "indexed: current role rechecked (person_enrich)",
+       "sources": [
+        {
+         "url": "https://api.crustdata.example/person/p-23",
+         "kind": "api_response",
+         "excerpt": "employment.current[0] = {employer_id: cd-2003, title: VP Supply Chain, start_date: 2023-01-01, end_date: null}",
+         "record_date": "2026-11-15",
+         "field_path": "employment.current[0]"
+        }
+       ]
+      }
+     ]
     }
    ]
   },
@@ -354,7 +399,22 @@
      "employer_name": "Narmada Cement Ltd",
      "role_start": "2023-01-01",
      "profile_url": "https://api.crustdata.example/person/p-24",
-     "business_email": "ila.shah@narmadacement.example"
+     "business_email": "ila.shah@narmadacement.example",
+     "facts": [
+      {
+       "claim": "Fixture employment recheck: Ila Shah still holds Head of Operations at employer cd-2004",
+       "value": "indexed: current role rechecked (person_enrich)",
+       "sources": [
+        {
+         "url": "https://api.crustdata.example/person/p-24",
+         "kind": "api_response",
+         "excerpt": "employment.current[0] = {employer_id: cd-2004, title: Head of Operations, start_date: 2023-01-01, end_date: null}",
+         "record_date": "2026-11-15",
+         "field_path": "employment.current[0]"
+        }
+       ]
+      }
+     ]
     }
    ]
   },
@@ -412,7 +472,22 @@
      "employer_name": "Tapti Plastics Ltd",
      "role_start": "2023-01-01",
      "profile_url": "https://api.crustdata.example/person/p-25",
-     "business_email": "kavya.iyer@taptiplastics.example"
+     "business_email": "kavya.iyer@taptiplastics.example",
+     "facts": [
+      {
+       "claim": "Fixture employment recheck: Kavya Iyer still holds Logistics Manager at employer cd-2005",
+       "value": "indexed: current role rechecked (person_enrich)",
+       "sources": [
+        {
+         "url": "https://api.crustdata.example/person/p-25",
+         "kind": "api_response",
+         "excerpt": "employment.current[0] = {employer_id: cd-2005, title: Logistics Manager, start_date: 2023-01-01, end_date: null}",
+         "record_date": "2026-11-15",
+         "field_path": "employment.current[0]"
+        }
+       ]
+      }
+     ]
     }
    ]
   },
@@ -470,7 +545,22 @@
      "employer_name": "Krishna Auto Parts Ltd",
      "role_start": "2023-01-01",
      "profile_url": "https://api.crustdata.example/person/p-26",
-     "business_email": "om.prakash@krishnaauto.example"
+     "business_email": "om.prakash@krishnaauto.example",
+     "facts": [
+      {
+       "claim": "Fixture employment recheck: Om Prakash still holds Head of Supply Chain at employer cd-2006",
+       "value": "indexed: current role rechecked (person_enrich)",
+       "sources": [
+        {
+         "url": "https://api.crustdata.example/person/p-26",
+         "kind": "api_response",
+         "excerpt": "employment.current[0] = {employer_id: cd-2006, title: Head of Supply Chain, start_date: 2023-01-01, end_date: null}",
+         "record_date": "2026-11-15",
+         "field_path": "employment.current[0]"
+        }
+       ]
+      }
+     ]
     }
    ]
   },
@@ -528,7 +618,22 @@
      "employer_name": "Mahalaxmi Textiles",
      "role_start": "2023-01-01",
      "profile_url": "https://api.crustdata.example/person/p-27",
-     "business_email": "gita.rane@mahalaxmitextiles.example"
+     "business_email": "gita.rane@mahalaxmitextiles.example",
+     "facts": [
+      {
+       "claim": "Fixture employment recheck: Gita Rane still holds Head of Logistics at employer cd-2007",
+       "value": "indexed: current role rechecked (person_enrich)",
+       "sources": [
+        {
+         "url": "https://api.crustdata.example/person/p-27",
+         "kind": "api_response",
+         "excerpt": "employment.current[0] = {employer_id: cd-2007, title: Head of Logistics, start_date: 2023-01-01, end_date: null}",
+         "record_date": "2026-11-15",
+         "field_path": "employment.current[0]"
+        }
+       ]
+      }
+     ]
     }
    ]
   },
@@ -586,7 +691,22 @@
      "employer_name": "Rival Freight Lines",
      "role_start": "2023-01-01",
      "profile_url": "https://api.crustdata.example/person/p-28",
-     "business_email": "dev@rivalfreight.example"
+     "business_email": "dev@rivalfreight.example",
+     "facts": [
+      {
+       "claim": "Fixture employment recheck: Dev Malhotra still holds COO at employer cd-2008",
+       "value": "indexed: current role rechecked (person_enrich)",
+       "sources": [
+        {
+         "url": "https://api.crustdata.example/person/p-28",
+         "kind": "api_response",
+         "excerpt": "employment.current[0] = {employer_id: cd-2008, title: COO, start_date: 2023-01-01, end_date: null}",
+         "record_date": "2026-11-15",
+         "field_path": "employment.current[0]"
+        }
+       ]
+      }
+     ]
     }
    ]
   },
@@ -674,7 +794,22 @@
      "employer_name": "Wardha Dairy Pvt Ltd",
      "role_start": "2023-01-01",
      "profile_url": "https://api.crustdata.example/person/p-29",
-     "business_email": "rohit.deshpande@wardhadairy.example"
+     "business_email": "rohit.deshpande@wardhadairy.example",
+     "facts": [
+      {
+       "claim": "Fixture employment recheck: Rohit Deshpande still holds Director Operations at employer cd-2011",
+       "value": "indexed: current role rechecked (person_enrich)",
+       "sources": [
+        {
+         "url": "https://api.crustdata.example/person/p-29",
+         "kind": "api_response",
+         "excerpt": "employment.current[0] = {employer_id: cd-2011, title: Director Operations, start_date: 2023-01-01, end_date: null}",
+         "record_date": "2026-11-15",
+         "field_path": "employment.current[0]"
+        }
+       ]
+      }
+     ]
     }
    ]
   },
@@ -732,7 +867,22 @@
      "employer_name": "Kolhapur Castings Ltd",
      "role_start": "2023-01-01",
      "profile_url": "https://api.crustdata.example/person/p-30",
-     "business_email": "sneha.jadhav@kolhapurcastings.example"
+     "business_email": "sneha.jadhav@kolhapurcastings.example",
+     "facts": [
+      {
+       "claim": "Fixture employment recheck: Sneha Jadhav still holds Head of Supply Chain at employer cd-2012",
+       "value": "indexed: current role rechecked (person_enrich)",
+       "sources": [
+        {
+         "url": "https://api.crustdata.example/person/p-30",
+         "kind": "api_response",
+         "excerpt": "employment.current[0] = {employer_id: cd-2012, title: Head of Supply Chain, start_date: 2023-01-01, end_date: null}",
+         "record_date": "2026-11-15",
+         "field_path": "employment.current[0]"
+        }
+       ]
+      }
+     ]
     }
    ]
   },
@@ -789,7 +939,22 @@
      "employer_id": "cd-2013",
      "employer_name": "Solapur Ceramics Ltd",
      "role_start": "2023-01-01",
-     "profile_url": "https://api.crustdata.example/person/p-31"
+     "profile_url": "https://api.crustdata.example/person/p-31",
+     "facts": [
+      {
+       "claim": "Fixture employment recheck: Ajay Pawar still holds Head of Supply Chain at employer cd-2013",
+       "value": "indexed: current role rechecked (person_enrich)",
+       "sources": [
+        {
+         "url": "https://api.crustdata.example/person/p-31",
+         "kind": "api_response",
+         "excerpt": "employment.current[0] = {employer_id: cd-2013, title: Head of Supply Chain, start_date: 2023-01-01, end_date: null}",
+         "record_date": "2026-11-15",
+         "field_path": "employment.current[0]"
+        }
+       ]
+      }
+     ]
     },
     {
      "name": "Neha Patil",
@@ -799,7 +964,22 @@
      "employer_name": "Solapur Ceramics Ltd",
      "role_start": "2023-01-01",
      "profile_url": "https://api.crustdata.example/person/p-32",
-     "business_email": "neha.patil@solapurceramics.example"
+     "business_email": "neha.patil@solapurceramics.example",
+     "facts": [
+      {
+       "claim": "Fixture employment recheck: Neha Patil still holds Logistics Manager at employer cd-2013",
+       "value": "indexed: current role rechecked (person_enrich)",
+       "sources": [
+        {
+         "url": "https://api.crustdata.example/person/p-32",
+         "kind": "api_response",
+         "excerpt": "employment.current[0] = {employer_id: cd-2013, title: Logistics Manager, start_date: 2023-01-01, end_date: null}",
+         "record_date": "2026-11-15",
+         "field_path": "employment.current[0]"
+        }
+       ]
+      }
+     ]
     }
    ]
   }
