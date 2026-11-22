@@ -78,6 +78,7 @@ class Ledger:
     def __init__(self, path: Path | str | None = None):
         path = Path(path or DATA_DIR / "ledger.sqlite")
         path.parent.mkdir(parents=True, exist_ok=True)
+        self.path = path
         self.db = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
         self.db.execute("PRAGMA journal_mode=WAL")
         self.db.execute("PRAGMA synchronous=FULL")
@@ -276,8 +277,78 @@ class Ledger:
 
     # ---- structured log -------------------------------------------------
     def log(self, run_id: str, level: str, msg: str, data: Any = None) -> None:
+        from .privacy import mask, masking_on
+
+        if masking_on():  # config privacy.mask_in_logs: emails + phone numbers
+            msg, data = mask(msg), mask(data)
         self.db.execute(
             "INSERT INTO events (run_id, level, msg, data, at) VALUES (?,?,?,?,?)",
             (run_id, level, msg, json.dumps(data, default=str) if data else None, time.time()),
         )
         print(f"[{level}] {run_id[:8]} {msg}", flush=True)
+
+    # ---- retention ------------------------------------------------------
+    def purge_person_data(self, days: int, *, dry_run: bool = False,
+                          now: float | None = None) -> dict:
+        """Delete person data of jobs last updated more than `days` ago (config
+        privacy.retention_days), keeping what proves an action happened once:
+
+          * step checkpoints (prospects, buyers, drafts)        -> deleted
+          * run request/result summary                          -> result cleared
+          * action payloads (draft, recipient)                  -> replaced by
+            {"redacted": true, "company": ...}; key, kind, status and approver kept,
+            so an old email can never be sent twice
+          * actions still pending/approved/started/failed       -> status 'expired'
+            (step 10 never sends them)
+          * data/results/<job>.json, data/outbox/<key>.eml/.ics -> deleted
+          * data/http_cache files older than the cutoff         -> deleted
+          * events and cost rows stay (masked at write, no person fields)
+        Returns counts per item."""
+        now = now or time.time()
+        cutoff = now - days * 86400
+        base = self.path.parent
+        runs = [r for (r,) in self.db.execute(
+            "SELECT run_id FROM runs WHERE updated_at < ?", (cutoff,))]
+        counts = {"runs": len(runs), "steps": 0, "actions_redacted": 0, "actions_expired": 0,
+                  "files": 0, "cache_files": 0}
+        files: list[Path] = []
+        for run_id in runs:
+            counts["steps"] += self.db.execute(
+                "SELECT COUNT(*) FROM steps WHERE run_id=?", (run_id,)).fetchone()[0]
+            files.append(base / "results" / f"{run_id}.json")
+            for key, payload, status in self.db.execute(
+                    "SELECT idem_key, payload, status FROM actions WHERE run_id=?", (run_id,)
+            ).fetchall():
+                files += [base / "outbox" / f"{key}.eml", base / "outbox" / f"{key}.ics"]
+                if json.loads(payload).get("redacted"):
+                    continue
+                counts["actions_redacted"] += 1
+                if status not in ("done", "rejected", "expired"):
+                    counts["actions_expired"] += 1
+        files = [f for f in files if f.exists()]
+        cache = [f for f in (base / "http_cache").glob("*.json")
+                 if f.stat().st_mtime < cutoff] if (base / "http_cache").exists() else []
+        counts["files"], counts["cache_files"] = len(files), len(cache)
+        if dry_run:
+            return counts
+        with self.tx() as db:
+            for run_id in runs:
+                db.execute("DELETE FROM steps WHERE run_id=?", (run_id,))
+                db.execute("UPDATE runs SET result=NULL WHERE run_id=?", (run_id,))
+                for key, payload, status in db.execute(
+                        "SELECT idem_key, payload, status FROM actions WHERE run_id=?", (run_id,)
+                ).fetchall():
+                    pl = json.loads(payload)
+                    if pl.get("redacted"):
+                        continue
+                    new_status = status if status in ("done", "rejected", "expired") else "expired"
+                    db.execute(
+                        "UPDATE actions SET payload=?, status=?, updated_at=? WHERE idem_key=?",
+                        (json.dumps({"redacted": True, "company": pl.get("company"),
+                                     "purged_at": now}), new_status, now, key))
+        for f in [*files, *cache]:
+            f.unlink(missing_ok=True)
+        if counts["runs"] or counts["cache_files"]:
+            self.log("privacy", "info", f"retention purge (older than {days} days): "
+                     + ", ".join(f"{k}={v}" for k, v in counts.items()))
+        return counts

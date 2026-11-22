@@ -8,6 +8,8 @@
     svc cost <job_id>                      cost ledger breakdown
     svc logs <job_id>                      step log
     svc outbox <job_id>                    sent/queued actions + email/invite files
+    svc purge [--days N] [--dry-run]       delete person data older than
+                                           privacy.retention_days (also runs before `run`)
 
 (`svc` = `python -m service.cli`)
 """
@@ -20,6 +22,7 @@ import sys
 from .config import DATA_DIR, settings, usd_to_inr
 from .ledger import Ledger
 from .pipeline import result_summary, run
+from .privacy import retention_days
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -43,6 +46,10 @@ def main(argv: list[str] | None = None) -> int:
     lg.add_argument("job_id")
     ob = sub.add_parser("outbox")
     ob.add_argument("job_id")
+    pg = sub.add_parser("purge")
+    pg.add_argument("--days", type=int, default=None,
+                    help="override config privacy.retention_days")
+    pg.add_argument("--dry-run", action="store_true")
     args = p.parse_args(argv)
 
     ledger = Ledger()
@@ -52,6 +59,7 @@ def main(argv: list[str] | None = None) -> int:
         req = req.get("request", req)  # accept eval case files directly
         if args.mode:
             settings()["sources"]["mode"] = args.mode
+        ledger.purge_person_data(retention_days())  # privacy.retention_days, every run
         res = run(req, ledger)
         out = DATA_DIR / "results" / f"{res.job_id}.json"
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -106,6 +114,11 @@ def main(argv: list[str] | None = None) -> int:
             (args.job_id,),
         ):
             print(*row, sep="  ")
+    elif args.cmd == "purge":
+        days = args.days if args.days is not None else retention_days()
+        counts = ledger.purge_person_data(days, dry_run=args.dry_run)
+        print(("would purge" if args.dry_run else "purged") + f" (older than {days} days): "
+              + json.dumps(counts))
     elif args.cmd == "outbox":
         out = DATA_DIR / "outbox"
         n_eml = n_ics = 0
