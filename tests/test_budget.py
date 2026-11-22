@@ -47,7 +47,9 @@ def test_limit_hit_mid_job_gives_partial_result_then_resumes(led, monkeypatch):
 
 
 def test_spent_budget_blocks_next_unfinished_step(led):
-    led.cost("budget-job", "crustdata", "test", 10.0)    # $10 ≈ Rs 840 > Rs 150 limit
+    from service.config import usd_to_inr
+    over = settings()["limits"]["max_cost_inr"] * 1.1 / usd_to_inr(1.0)   # 110% of the limit
+    led.cost("budget-job", "crustdata", "test", over)
     res = run(REQ, led)
     assert res.status == "stopped_limit"
     assert res.prospects == []

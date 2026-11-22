@@ -33,7 +33,7 @@ def run_job(tmp: Path, crash: str | None = None) -> subprocess.CompletedProcess:
     req = tmp / "req.json"
     if not req.exists():
         req.write_text(json.dumps(REQ), encoding="utf-8")
-    return cli(tmp, "run", str(req), crash=crash)
+    return cli(tmp, "run", str(req), "--mode", "fixtures", crash=crash)
 
 
 def events(tmp: Path) -> list[str]:

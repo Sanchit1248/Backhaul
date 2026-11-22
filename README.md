@@ -39,7 +39,7 @@ Our key's limits (from `GET /account/endpoints`, 22 Nov 2026): 5 requests/min on
 ```powershell
 .\scripts\setup.ps1                 # venv + deps (pip install -e ".[dev]") + .env + tests
 python evals\run_evals.py           # hard-case evals on fixtures (must show no WRONG)
-python -m service.cli run evals\cases\fixture_hard_cases.json --mode fixtures
+python -m service.cli run evals\cases\fixture_hard_cases.json --mode fixtures   # rehearsal
 python -m service.cli pending       # drafts waiting for approval (--json for key/company)
 python -m service.cli approve <key> --by "Your Name"
 python -m service.cli run evals\cases\fixture_hard_cases.json --mode fixtures   # sends approved ones, once
@@ -48,9 +48,9 @@ python -m service.cli cost <job_id>     # Rs per op, Crustdata credits estimated
 python -m service.cli cost <job_id> --calls   # every paid call with its request id
 python -m service.web                   # approval page on http://127.0.0.1:8000 (APPROVER_PASSWORD in .env)
 ```
-Real runs (screening and finals) use `--mode live` (Crustdata key in `.env`, credit price in
-`costs.crustdata_inr_per_credit`). `config/service.yaml` keeps `sources.mode: fixtures` as the
-default so the tests never spend credits.
+`sources.mode` defaults to **live** (screening and finals): a plain `svc run` calls Crustdata
+(key in `.env`, ₹25.20 per credit in `costs.crustdata_inr_per_credit`). Tests and evals ask for
+fixtures themselves; add `--mode fixtures` to rehearse without spending credits.
 
 **Finals demo:** `.\scripts\demo.ps1` runs a request live, shows pending approvals, approves one,
 crashes the process right after sending (`SERVICE_CRASH_AT=after_send`), runs again, checks the
@@ -74,6 +74,63 @@ at the failed step.
 $env:SERVICE_CRASH_AT="after_send"; python -m service.cli run evals\cases\fixture_hard_cases.json
 Remove-Item Env:SERVICE_CRASH_AT;   python -m service.cli run evals\cases\fixture_hard_cases.json
 ```
+
+## Screening runbook (one person, cold)
+Run from the machine that holds `data/` (ledger, logs, cost records, outbox: not in git).
+
+**1. Setup (once)**
+```powershell
+.\scripts\setup.ps1                      # venv, pip install -e ".[dev]", creates .env, runs tests
+```
+In `.env`: `CRUSTDATA_API_KEY=...` and `APPROVER_PASSWORD=...` (approval page login).
+Check: `python -m pytest -q` and `python evals\run_evals.py` → no WRONG.
+
+**2. Run the unseen request (live is the default)**
+Save the request as JSON, e.g. `data\requests\screening.json`:
+```json
+{"job_id": "screening-1", "text": "Book 5 meetings for the Pune to Mumbai route; spare capacity 12 trucks a week", "request_date": "2026-11-22"}
+```
+```powershell
+python -m service.cli run data\requests\screening.json
+```
+- Takes ~5–10 minutes: the Crustdata key allows 5 requests/min; the job takes at most
+  `discovery.live_max_candidates` (10) companies. Lines starting `[info]`/`[warn]` are progress
+  (429 / timeout warnings are retried automatically).
+- Cost limit ₹1,500 per job (`limits.max_cost_inr`; a request's `"budget_inr"` overrides). If it
+  is hit the job ends `stopped_limit` with a partial result; raising the limit and re-running
+  resumes where it stopped.
+- The output lists every company with its status and reason: `awaiting_approval`, `held`,
+  `dropped`, `excluded`, `cannot_verify`. Full result with every source: the `full_result` path.
+
+**3. Approve (a person, never the service)**
+```powershell
+python -m service.web                     # http://127.0.0.1:8000, or:
+python -m service.cli pending
+python -m service.cli approve <key> --by "Your Name"
+python -m service.cli run data\requests\screening.json   # sends approved ones, exactly once
+python -m service.cli outbox screening-1  # .eml + .ics per sent email (data\outbox)
+```
+
+**4. Stop + restart (judges will do this)**
+Kill it any time (`Ctrl+C`, close the terminal, Task Manager), then run the **same command** again.
+Finished steps load from checkpoints (`step …: resumed from checkpoint`), approved emails are sent
+once. Rehearsal with an exact crash point: `.\scripts\demo.ps1` (or `-Mode fixtures`).
+
+**5. Show logs and cost records**
+```powershell
+python -m service.cli logs screening-1          # step log (emails/phones masked)
+python -m service.cli cost screening-1          # ₹ per call type + Crustdata credits estimated vs reported
+python -m service.cli cost screening-1 --calls  # every paid call with its request id
+```
+
+**If something goes wrong**
+| You see | Meaning / do |
+|---|---|
+| `status: partial` + a note `step … failed` | a source broke; the rest is held as cannot verify. Fix/wait, re-run the same command: it resumes at that step |
+| `stopped_limit` | budget used up; raise `limits.max_cost_inr` (or `budget_inr` in the request) and re-run |
+| `CRUSTDATA_API_KEY not set` | add it to `.env` |
+| `ValueError: config output…` | a typo in `output.*` fields in `config/service.yaml` |
+| No drafts at all | read each company's `reason`; "no trigger within 30 days" and "no verified buyer" are correct holds, not errors |
 
 ## Repo layout
 ```

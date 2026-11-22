@@ -124,10 +124,18 @@ def route_cities(job: JobRequest, records: ClientRecords) -> list[str]:
 
 # ---------------------------------------------------------------- discover ---
 
+def live_cap(cfg: dict) -> int:
+    """Companies a live job takes in: discovery.live_max_candidates, never above
+    limits.max_candidates (each live candidate costs credits and rate-limited calls)."""
+    hard = int(cfg.get("limits", {}).get("max_candidates", 40))
+    live = (cfg.get("discovery") or {}).get("live_max_candidates")
+    return min(hard, int(live)) if live else hard
+
+
 def search_body(job: JobRequest, records: ClientRecords, cfg: dict) -> tuple[dict, list[str]]:
     """Company search request built from runtime config. Returns (body, notes)."""
     disc = cfg.get("discovery", {})
-    limit = int(cfg.get("limits", {}).get("max_candidates", 40))
+    limit = live_cap(cfg)
     notes: list[str] = []
     conds: list[dict] = [{"field": "locations.country", "type": "=", "value": "India"}]
 
@@ -288,7 +296,7 @@ def discover_hiring_first(client, job: JobRequest, records: ClientRecords, *,
     if not stats:
         return []
 
-    limit = int(cfg.get("limits", {}).get("max_candidates", 40))
+    limit = live_cap(cfg)
     ranked = sorted(stats, key=lambda k: (stats[k][0], stats[k][1] or since), reverse=True)
     ids = ranked[: limit * 3]
     body, extra = search_body(job, records, cfg)
