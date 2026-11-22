@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from datetime import date, timedelta
 from typing import Any
 
 from ..models import ClientRecords, CompanyRef, IdentityMatch, JobRequest, Location, Source
@@ -166,6 +167,10 @@ def discover(client, job: JobRequest, records: ClientRecords, *, cfg: dict | Non
     if notes is not None:
         notes.extend(extra)
     resp = client.call("company_search", body=body)
+    return _company_refs(resp, body["limit"])
+
+
+def _company_refs(resp: dict, limit: int) -> list[CompanyRef]:
     data = _data(resp, dict, "company_search")
     rows = data.get("companies")
     if not isinstance(rows, list):
@@ -173,7 +178,7 @@ def discover(client, job: JobRequest, records: ClientRecords, *, cfg: dict | Non
 
     out: list[CompanyRef] = []
     seen: set[str] = set()
-    for row in rows[: body["limit"]]:
+    for row in rows[:limit]:
         info = row.get("basic_info") or {}
         cid = _id(row.get("crustdata_company_id") or info.get("crustdata_company_id"))
         name = info.get("name")
@@ -191,6 +196,120 @@ def discover(client, job: JobRequest, records: ClientRecords, *, cfg: dict | Non
             headcount=(row.get("headcount") or {}).get("total"),
         ))
     return out
+
+
+# ------------------------------------------------- discover: hiring first ---
+
+def job_cities(job: JobRequest, records: ClientRecords, cfg: dict) -> list[str]:
+    """Route end points plus the satellite towns that feed them (config route_fit.nearby),
+    title-cased the way the job index stores location.city."""
+    ends = route_cities(job, records)
+    nearby = (cfg.get("route_fit") or {}).get("nearby") or {}
+    towns = [t for t, end in nearby.items() if str(end).lower() in ends]
+    out: list[str] = []
+    for c in [*ends, *towns]:
+        t = c.title()
+        if t not in out:
+            out.append(t)
+    return out
+
+
+def hiring_job_body(job: JobRequest, records: ClientRecords, cfg: dict, since: date) -> dict:
+    """Job search for logistics/warehouse/supply-chain posts in the route cities since `since`."""
+    from .live_signals import HIRING_TITLE_KEYWORDS, JOB_SEARCH_FIELDS
+
+    disc = cfg.get("discovery", {})
+    conds: list[dict] = [
+        {"op": "or", "conditions": [{"field": "job_details.title", "type": "[.]", "value": k}
+                                    for k in HIRING_TITLE_KEYWORDS]},
+        {"field": "metadata.date_added", "type": "=>", "value": since.isoformat()},
+    ]
+    cities = job_cities(job, records, cfg)
+    if cities:
+        conds.append({"field": "location.city", "type": "in", "value": cities})
+    return {"filters": {"op": "and", "conditions": conds}, "fields": JOB_SEARCH_FIELDS,
+            "sorts": [{"field": "metadata.date_added", "order": "desc"}],
+            "limit": int(disc.get("job_search_limit", 100))}
+
+
+def discover_hiring_first(client, job: JobRequest, records: ClientRecords, *,
+                          cfg: dict | None = None,
+                          notes: list[str] | None = None) -> list[CompanyRef]:
+    """Companies that posted a logistics/warehouse/supply-chain job in a route city (or a
+    satellite town) inside the trigger window, kept only if the company index places
+    them in India, in the target industries and headcount band.
+
+    Ordered by number of matching posts, then the most recent post. Posts without a
+    Crustdata company id are skipped (no identity to resolve) and counted in notes.
+    Step 4 re-fetches each company's posts as sourced triggers.
+    """
+    from .live_signals import is_relevant_logistics_job_title, parse_date
+
+    if cfg is None:
+        from ..config import settings
+
+        cfg = settings()
+    notes = notes if notes is not None else []
+    since = job.request_date - timedelta(days=int(cfg["triggers"]["window_days"]))
+    jbody = hiring_job_body(job, records, cfg, since)
+    resp = client.call("job_search", body=jbody)
+    data = _data(resp, dict, "job_search")
+    rows = data.get("job_listings")
+    if not isinstance(rows, list):
+        raise SourceUnavailable("crustdata.job_search response has no job_listings list")
+
+    stats: dict[str, list] = {}   # company id -> [posts, latest post date]
+    no_id = irrelevant = 0
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        title = (row.get("job_details") or {}).get("title")
+        if not is_relevant_logistics_job_title(title):
+            irrelevant += 1
+            continue
+        cid = _id(((row.get("company") or {}).get("basic_info") or {}).get("crustdata_company_id"))
+        if not cid:
+            no_id += 1
+            continue
+        d = parse_date((row.get("metadata") or {}).get("date_added"))
+        st = stats.setdefault(cid, [0, None])
+        st[0] += 1
+        if d and (st[1] is None or d > st[1]):
+            st[1] = d
+    cities = job_cities(job, records, cfg)
+    notes.append(f"discovery: {len(rows)} logistics job posts since {since} in "
+                 f"{', '.join(cities) or 'any city'}; {len(stats)} companies with an id, "
+                 f"{no_id} posts without a company id, {irrelevant} non-freight titles skipped")
+    if not stats:
+        return []
+
+    limit = int(cfg.get("limits", {}).get("max_candidates", 40))
+    ranked = sorted(stats, key=lambda k: (stats[k][0], stats[k][1] or since), reverse=True)
+    ids = ranked[: limit * 3]
+    body, extra = search_body(job, records, cfg)
+    notes.extend(e for e in extra if "headquarters city" not in e)
+    hf = (cfg.get("discovery") or {}).get("hiring_first") or {}
+    drop = {"locations.city"}
+    if not hf.get("hq_country_filter", True):
+        drop.add("locations.country")   # the post's city already proves a site in India
+    conds = [c for c in body["filters"]["conditions"] if c.get("field") not in drop]
+    if "headcount_max" in hf:
+        conds = [c for c in conds if not (c.get("field") == "headcount.total"
+                                          and c.get("type") == "=<")]
+        if hf["headcount_max"] is not None:
+            conds.append({"field": "headcount.total", "type": "=<",
+                          "value": int(hf["headcount_max"])})
+    conds.append({"field": "crustdata_company_id", "type": "in",
+                  "value": [int(i) if i.isdigit() else i for i in ids]})
+    body["filters"]["conditions"] = conds
+    body["limit"] = len(ids)
+    body.pop("sorts", None)
+    refs = _company_refs(client.call("company_search", body=body), len(ids))
+    order = {cid: n for n, cid in enumerate(ranked)}
+    refs.sort(key=lambda r: order.get(str(r.crustdata_id), len(order)))
+    notes.append(f"discovery: {len(refs)} of {len(ids)} hiring companies pass the index filters "
+                 f"({', '.join(sorted({c.get('field', 'or') for c in conds}))})")
+    return refs[:limit]
 
 
 # ---------------------------------------------------------------- identify ---

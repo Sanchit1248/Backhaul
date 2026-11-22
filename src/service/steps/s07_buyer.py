@@ -83,10 +83,6 @@ def run(ctx: Ctx, prospects: list[Prospect]) -> list[Prospect]:
                 _reject(p, cand, "employer_mismatch", "name match only: employer is "
                         f"{cand.employer_name or cand.employer_id or 'missing'}")
                 continue
-            if not cand.business_email:
-                _reject(p, cand, "missing_business_email",
-                        "no business email from the source (employment not rechecked)")
-                continue
             try:
                 b = ctx.sources.verify_employment(cand)
             except SourceUnavailable as e:
@@ -109,6 +105,10 @@ def run(ctx: Ctx, prospects: list[Prospect]) -> list[Prospect]:
                        else "enrichment returned no record for this person"
                        if not _has(b, EVIDENCE_MISMATCH) else "recheck inconclusive")
                 _unverified(p, b, why)
+                continue
+            if not b.business_email:   # the recheck is where the live source supplies it
+                _reject(p, b, "missing_business_email",
+                        "no business email tied to the employer id")
                 continue
             p.buyer = b
             break

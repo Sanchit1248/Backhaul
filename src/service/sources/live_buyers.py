@@ -7,9 +7,12 @@ What the current key can and cannot tell us (smoke T5/T6):
   * person search and person enrichment return INDEXED employment: current and past
     roles with crustdata_company_id and start/end dates. That is the provider's index,
     not an independent check, so every fact here is labelled "indexed".
-  * batch work-history verification (/batch/person/verify) and business contact
-    enrichment are disabled on this key. We never read or guess an email; a Buyer from
-    this module carries business_email=None unless a future source supplies one.
+  * batch work-history verification (/batch/person/verify) is disabled on this key.
+  * business email: person enrichment with `contact.business_emails` works (checked
+    live 22 Nov 2026, +1 credit). verify_employment requests it in the same call and
+    keeps an email ONLY when the buyer is still current at the employer AND the email
+    row's crustdata_company_id equals that employer id. Personal emails and phones
+    are never requested. Config buyer.fetch_business_email turns this off.
 
 Matching rules:
   * a company without a crustdata_id is never searched (no name-only matching)
@@ -41,6 +44,7 @@ SEARCH_FIELDS = [
     "metadata.updated_at",
 ]
 ENRICH_FIELDS = ["basic_profile", "experience", "metadata"]
+EMAIL_FIELDS = ["contact.business_emails"]   # never contact.personal_emails / phones
 SEARCH_LIMIT = 5
 
 EVIDENCE_INDEXED = "indexed: current role (person_search)"
@@ -218,6 +222,41 @@ def _enriched_person(resp: dict, buyer: Buyer) -> tuple[str, dict] | None:
     return None
 
 
+def _fetch_email() -> bool:
+    try:
+        from ..config import settings
+
+        return bool(settings().get("buyer", {}).get("fetch_business_email", True))
+    except Exception:  # noqa: BLE001 - config unavailable in isolated tests
+        return True
+
+
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def _employer_email(resp: dict, base: str, person: dict, employer_id: str, name: str,
+                    updated: str | None) -> tuple[str, Fact] | None:
+    """The business email whose crustdata_company_id is the verified employer, as
+    (email, Fact). Prefers a row with a non-null status. None when there is none."""
+    rows = ((person.get("contact") or {}).get("business_emails")) or []
+    hits = [(k, r) for k, r in enumerate(rows) if isinstance(r, dict)
+            and _same_id(r.get("crustdata_company_id"), employer_id)
+            and isinstance(r.get("email"), str) and _EMAIL_RE.match(r["email"].strip())]
+    if not hits:
+        return None
+    k, row = sorted(hits, key=lambda t: t[1].get("status") is None)[0]
+    email = row["email"].strip()
+    path = f"{base}.contact.business_emails[{k}]"
+    src = cite(resp, f"{path}.email", email, updated)
+    src = src.model_copy(update={"excerpt": f"{src.excerpt}; {path}.crustdata_company_id = "
+                                            f"{row.get('crustdata_company_id')!r}; "
+                                            f"{path}.status = {row.get('status')!r}"})
+    return email, Fact(
+        claim=f"Business email for {name} at employer id {employer_id} (Crustdata person "
+              f"enrichment; deliverability status {row.get('status')!r})",
+        value=email, sources=[src])
+
+
 def verify_employment(client, buyer: Buyer) -> Buyer:
     """Recheck the buyer's role at buyer.employer_id through person enrichment.
 
@@ -231,7 +270,8 @@ def verify_employment(client, buyer: Buyer) -> Buyer:
     if not buyer.profile_url or not buyer.employer_id:
         return buyer
     resp = client.call("person_enrich", body={
-        "professional_network_profile_urls": [buyer.profile_url], "fields": ENRICH_FIELDS})
+        "professional_network_profile_urls": [buyer.profile_url],
+        "fields": ENRICH_FIELDS + (EMAIL_FIELDS if _fetch_email() else [])})
     hit = _enriched_person(resp, buyer)
     if hit is None:
         return buyer
@@ -266,9 +306,13 @@ def verify_employment(client, buyer: Buyer) -> Buyer:
                         value=EVIDENCE_TITLE_CHANGE,
                         sources=_role_sources(resp, ppath, prow, updated, end=True)))
                     break
+        email = _employer_email(resp, base, person, emp, buyer.name, updated)
+        if email:
+            facts.append(email[1])
         return buyer.model_copy(update={
             "title": row.get("title") or buyer.title, "employer_name": row.get("name"),
-            "role_start": start, "role_end": None, "facts": facts})
+            "role_start": start, "role_end": None, "facts": facts,
+            "business_email": email[0] if email else buyer.business_email})
 
     if past:
         same = [(j, r) for j, r in past if (r.get("title") or "").lower() == buyer.title.lower()]
