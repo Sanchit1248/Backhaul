@@ -1,7 +1,7 @@
 # Team plan
 
 ## Roles
-See [WORKSTREAMS.md](WORKSTREAMS.md): A data, B pipeline & outbox, C email & approval, D rules, evals & story. One owner per file; each person runs their own Claude Code session with the starter prompt there.
+See [WORKSTREAMS.md](WORKSTREAMS.md): A data, B pipeline, outbox & story (README, docs, demo), C email, approval, rules & evals. D left on 2026-11-22; their files moved to B and C. One owner per file; each person runs their own Claude Code session with the starter prompt there.
 
 ## Git workflow (7-hour build: keep it light)
 - `main` must always run. Before every push: `pytest` + `python evals/run_evals.py`.
@@ -14,7 +14,7 @@ See [WORKSTREAMS.md](WORKSTREAMS.md): A data, B pipeline & outbox, C email & app
 1. Clone the organizer repo. Copy this repo's contents into it, except `.git/`. Commit: `chore: import team starter`.
 2. Read the client name, records and request formats from the kickoff kit. B maps them in `steps/s01_intake.py`; point `client.records_file` in config at them.
 3. Track is decided (Revenue: outbound SDR, see [PLAN.md](PLAN.md)). Check the kickoff request type matches our discovery flow; if it is inbound-lead routing, regroup for 15 minutes.
-4. D writes 5+ eval cases from kickoff data (lookalike, old trigger, departed buyer, DNC, undated news).
+4. C writes 5+ eval cases from kickoff data (lookalike, old trigger, departed buyer, DNC, undated news).
 5. Build the pipeline end to end with one live source first, then widen.
 
 ## Timeline (7 h build)

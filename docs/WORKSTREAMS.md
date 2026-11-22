@@ -1,26 +1,31 @@
-# Workstreams: 4 builders, 4 Claude Code sessions, no collisions
+# Workstreams: 3 builders, 3 Claude Code sessions, no collisions
+
+**2026-11-22: D has left the team.** D's files and remaining tasks are split between
+B and C below; A keeps only the live data layer (critical path). D's finished work
+(sources-disagree rule, source-failure handling, 20 eval cases, pitch draft, README
+sections) stays as is.
 
 The service is ten steps over shared models. **The shared contract is
 `src/service/models.py` (data shapes) + `src/service/sources/__init__.py`
 (DataSources interface) + the step signature in `src/service/steps/__init__.py`.**
-Everything else has exactly one owner. Fixture sources let B, C and D build and
+Everything else has exactly one owner. Fixture sources let B and C build and
 test with no Crustdata credits while A builds the live data layer.
 
 ## Who owns what
 
-| | A: Data | B: Pipeline & outbox | C: Email & approval | D: Rules, evals & story |
-|---|---|---|---|---|
-| **Files** | `sources/live.py`, `sources/crustdata.py`, `sources/base.py`, `steps/s02_discover.py`, `steps/s03_identity.py`, `steps/s07_buyer.py`, `scripts/smoke_test.py` | `pipeline.py`, `ledger.py`, `budget.py`, `config/service.yaml`, `steps/s01_intake.py`, `steps/s05_route_fit.py`, `steps/s06_exclude.py`, `steps/s10_send.py`, `cli.py` | `mailer.py`, `steps/s08_draft.py`, `steps/s09_approve.py`, `src/service/web/` (approval page), `llm.py` | `steps/s04_triggers.py`, `evals/`, `tests/fixtures/`, `README.md`, `docs/` |
-| **Hour 0–1** | Smoke test against kickoff creds: which endpoints work, cost per call, coverage of mid-size Indian firms | Map kickoff request + client records into `s01_intake` | Approval page skeleton reading `ledger.pending_approvals()` | Write 5+ eval cases from kickoff data; fill README sections |
-| **Hour 1–3 (thin slice, job posts only)** | `LiveSources.discover/identify/triggers(hiring)/people/verify_employment` | Live-mode end-to-end run; kill test at each step | Approve / edit / reject on the page → ledger; `.ics` check in Gmail/Outlook | Triggers rules incl. "sources disagree"; eval for every hard case |
-| **Hour 3** | (requirement change: B leads, D updates evals, A and C keep going) | apply change in config/code | | re-run evals |
-| **Hour 3–5** | News (web search + fetch passage) and funding triggers; locations fallback (GST/website) | Route-fit "near" cities, route_filter; budget stop → partial result | LLM polish with no new facts (optional); masking PII in logs | Cost-per-meeting from ledger; ethics + finance answers in `docs/PITCH.md` |
-| **Hour 5–7** | Crustdata usage vs our cost ledger | Kill drills, restart demo script | Demo polish of approval page | Architecture diagram, demo rehearsal, live-fix drill |
+| | A: Data | B: Pipeline, outbox & story | C: Email, approval, rules & evals |
+|---|---|---|---|
+| **Files** | `sources/live.py`, `sources/live_*.py`, `sources/crustdata.py`, `sources/base.py`, `steps/s02_discover.py`, `steps/s03_identity.py`, `steps/s07_buyer.py`, `scripts/smoke_test.py` | `pipeline.py`, `ledger.py`, `budget.py`, `faults.py`, `config/service.yaml`, `steps/s01_intake.py`, `steps/s05_route_fit.py`, `steps/s06_exclude.py`, `steps/s10_send.py`, `cli.py`, `scripts/demo.ps1`, `README.md`, `docs/` (from D) | `mailer.py`, `steps/s08_draft.py`, `steps/s09_approve.py`, `src/service/web/` (approval page), `llm.py`, `steps/s04_triggers.py`, `evals/`, `tests/fixtures/` (from D) |
+| **Done** | Company discovery/identity/locations, buyers, signals, Crustdata client (`live_*.py`, merged) | Kill tests, budget stop, route fit, step failure -> partial, `svc --mode/outbox`, demo script | Approval web app, Outlook/Google-safe `.ics`; (from D) sources-disagree rule, 20 eval cases |
+| **Now (blocking)** | Wire `LiveSources` in `sources/live.py` to the `live_*.py` mappers so a live run gets past step 2; set the Crustdata credit price (Rs/credit) with B | Map kickoff request + client records into `s01_intake` when the kit is out; live end-to-end run once A's wiring lands | Eval case "budget almost used up" -> `stopped_limit` with partial result; 5+ eval cases from kickoff data when the kit is out |
+| **Hour 3** | keep going | requirement change: lead, apply in config/code | requirement change: update + re-run evals |
+| **Hour 3–5** | News/funding triggers live; locations fallback (GST/website); live eval cases (records after 1 Sep 2026) | `docs/PITCH.md` TODOs: agency source URLs, Rs per credit, cost per job/meeting from `svc cost` after a live run | LLM polish with no new facts (optional); masking PII in logs; confirm retention deletion + log masking for `docs/PITCH.md` (tell B) |
+| **Hour 5–7** | Crustdata usage vs our cost ledger (with B) | Kill drills, demo rehearsal, live-fix drill, architecture diagram, README final | Demo polish of approval page |
 
 Shared files (`models.py`, `sources/__init__.py`, `steps/__init__.py`): change only after
 saying so in team chat, in a small PR on its own, merged first.
 
-## How to run 4 Claude sessions in parallel (live build)
+## How to run 3 Claude sessions in parallel (live build)
 1. Each person: their own clone, **on `main`**, Claude Code opened in the repo root.
    Start a new Claude session after pulling this, so the sync hook loads.
 2. Paste your starter prompt below as the first message. It tells Claude which files it owns.
@@ -85,7 +90,10 @@ Never send from the web app: sending stays in step 10.
 Then check the generated .ics opens correctly in Google Calendar and Outlook.
 ```
 
-### D: Rules, evals & story
+### D: Rules, evals & story (D has left: C owns these files now)
+C: add to your starter prompt -> "I also own: steps/s04_triggers.py, evals/, tests/fixtures/."
+B: add to your starter prompt -> "I also own: README.md, docs/, scripts/demo.ps1."
+Original D prompt kept for reference:
 ```
 Read CLAUDE.md, docs/WORKSTREAMS.md, docs/CHECKLIST.md, src/service/models.py,
 steps/s04_triggers.py, evals/ and tests/fixtures/.
